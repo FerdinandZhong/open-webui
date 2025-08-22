@@ -5,7 +5,7 @@ import os
 
 def run():
     # Change to ai-screening-main directory
-    os.chdir('ai-screening-main')
+    os.chdir('ai-screening')
     current_dir = os.getcwd()
     
     # Check if uv virtual environment exists
