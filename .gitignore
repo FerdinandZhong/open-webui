@@ -150,3 +150,8 @@ celerybeat.pid
 
 # pytype
 .pytype/
+
+# OFAC data files
+data_list/*.xml
+data_list/*.csv
+data_list/*.db
