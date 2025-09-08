@@ -44,6 +44,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
+    min-height: 60px;
 }
 
 .nav-content {
@@ -61,7 +62,9 @@ body {
 
 .nav-logo {
     height: 40px;
+    max-width: 200px;
     width: auto;
+    object-fit: contain;
 }
 
 .nav-title {
