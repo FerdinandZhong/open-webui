@@ -21,5 +21,9 @@ subprocess.run(['uv', 'sync'], check=True)
 env = os.environ.copy()
 env['SDN_FILE_PATH'] = '/home/cdsw/data_list/sdn_final.csv'
 
+print(f"DEBUG WRAPPER: OPENAI_API_KEY: {'*' * 10 if env.get('OPENAI_API_KEY') else 'NOT SET'}")
+print(f"DEBUG WRAPPER: USE_LLM: {env.get('USE_LLM', 'NOT SET')}")
+print(f"DEBUG WRAPPER: SDN_FILE_PATH: {env.get('SDN_FILE_PATH', 'NOT SET')}")
+
 result = subprocess.run([venv_python, "run_merged_app.py"], env=env)
 sys.exit(result.returncode)

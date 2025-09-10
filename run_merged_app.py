@@ -20,6 +20,11 @@ app = Flask(__name__, template_folder='flask_ui/templates', static_folder='flask
 
 logger = setup_logger(__name__)
 
+# Check environment variables
+print(f"DEBUG: OPENAI_API_KEY: {'*' * 10 if os.environ.get('OPENAI_API_KEY') else 'NOT SET'}")
+print(f"DEBUG: USE_LLM: {os.environ.get('USE_LLM', 'NOT SET')}")
+print(f"DEBUG: SDN_FILE_PATH env: {os.environ.get('SDN_FILE_PATH', 'NOT SET')}")
+
 # Initialize search service directly
 # Use the direct path since file exists
 SDN_FILE_PATH = "/home/cdsw/data_list/sdn_final.csv"

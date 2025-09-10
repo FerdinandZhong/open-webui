@@ -170,11 +170,15 @@ def main():
             "bypass_auth": True,
             "environment": {
                 "FLASK_ENV": "production",
-                "USE_LLM": os.environ.get("USE_LLM", "true"),
                 "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
+                "USE_LLM": "true",
+                "SDN_FILE_PATH": "data_list/sdn_final.csv",
+                "API_HOST": "0.0.0.0",
+                "API_PORT": "8000",
+                "MAX_SEARCH_RESULTS": "10",
+                "NAME_MATCH_THRESHOLD": "0.4",
                 "CDSW_APP_PORT": "8090",
-                "CDSW_READONLY_PORT": "8090",
-                "SDN_FILE_PATH": "data_list/sdn_final.csv"
+                "CDSW_READONLY_PORT": "8090"
             },
             "runtime_id": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
         }
