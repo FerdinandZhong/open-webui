@@ -26,23 +26,17 @@ class CMLApplicationCreator:
         else:
             self.api_base = api_url
         
-        # Use CDSW authentication - running within CML should have access
-        self.api_key = os.environ.get("CDSW_API_KEY")
-        
         if not all([self.project_id, self.api_base]):
             print("Missing required environment variables:")
             print(f"  CDSW_PROJECT_ID: {self.project_id}")
             print(f"  CDSW_API_URL: {self.api_base}")
             sys.exit(1)
         
+        # Use session-based authentication (no API key needed within CML)
         self.headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        
-        # Add authorization if API key is available
-        if self.api_key:
-            self.headers["Authorization"] = f"Bearer {self.api_key}"
         
         print(f"Project ID: {self.project_id}")
         print(f"API Base: {self.api_base}")
@@ -53,7 +47,11 @@ class CMLApplicationCreator:
         print(f"🌐 {method} {url}")
         
         try:
-            response = requests.request(
+            # Use session to maintain cookies for authentication within CML
+            import requests
+            session = requests.Session()
+            
+            response = session.request(
                 method=method,
                 url=url,
                 headers=self.headers,
