@@ -172,6 +172,7 @@ def main():
                 "FLASK_ENV": "production",
                 "USE_LLM": os.environ.get("USE_LLM", "true"),
                 "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
+                "CDSW_APP_PORT": "8090",
                 "CDSW_READONLY_PORT": "8090",
                 "SDN_FILE_PATH": "data_list/sdn_final.csv"
             },
