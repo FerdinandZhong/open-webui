@@ -476,6 +476,19 @@ class CMLDeployer:
                 continue
 
             job_name = job_config["name"]
+            
+            # Replace environment variable placeholders
+            if "environment" in job_config:
+                env = job_config["environment"]
+                # Replace OPENAI_API_KEY placeholder
+                if "OPENAI_API_KEY" in env and env["OPENAI_API_KEY"] == "${OPENAI_API_KEY}":
+                    openai_key = os.environ.get("OPENAI_API_KEY", "")
+                    if openai_key:
+                        env["OPENAI_API_KEY"] = openai_key
+                        print(f"🔐 OpenAI API key configured for job: {job_name}")
+                    else:
+                        print(f"⚠️  No OpenAI API key available for job: {job_name}")
+                        env["USE_LLM"] = "false"  # Disable LLM if no API key
 
             # Handle parent job dependency
             parent_job_id = None

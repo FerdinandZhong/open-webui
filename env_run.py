@@ -170,7 +170,7 @@ def main():
             "bypass_auth": True,
             "environment": {
                 "FLASK_ENV": "production",
-                "USE_LLM": "true",
+                "USE_LLM": os.environ.get("USE_LLM", "true"),
                 "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
                 "CDSW_READONLY_PORT": "8090",
                 "SDN_FILE_PATH": "data_list/sdn_final.csv"

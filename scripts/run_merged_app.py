@@ -23,6 +23,13 @@ def main():
     os.environ["CDSW_READONLY_PORT"] = os.environ.get("CDSW_READONLY_PORT", "8090")
     os.environ["SDN_FILE_PATH"] = os.environ.get("SDN_FILE_PATH", "data_list/sdn_final.csv")
     
+    # Pass through OpenAI API key if available
+    if "OPENAI_API_KEY" in os.environ:
+        print(f"OpenAI API key: {'*' * 10} (masked)")
+    else:
+        print("⚠️  OpenAI API key not set - LLM features will be disabled")
+        os.environ["USE_LLM"] = "false"  # Disable LLM if no API key
+    
     print(f"Flask env: {os.environ['FLASK_ENV']}")
     print(f"LLM enabled: {os.environ['USE_LLM']}")
     print(f"Port: {os.environ['CDSW_READONLY_PORT']}")
