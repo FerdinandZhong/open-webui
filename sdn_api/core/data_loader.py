@@ -16,19 +16,11 @@ class SDNDataLoader:
     
     def load_entries(self) -> List[SDNEntry]:
         """Load and parse all SDN entries from CSV file."""
-        from ..utils.logger import setup_logger
-        logger = setup_logger(__name__)
-        
         entries = []
-        row_count = 0
         
         with open(self.sdn_file_path, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
             for row_idx, row in enumerate(reader):
-                row_count += 1
-                if row_idx < 5:  # Only log first few rows
-                    logger.info(f"DEBUG: Row {row_idx}: {len(row)} columns - {row[:3] if row else 'empty'}")
-                
                 if row_idx == 0:  # Skip header
                     continue
                     
@@ -67,12 +59,9 @@ class SDNDataLoader:
                         entries.append(entry)
                         
                     except Exception as e:
-                        logger.error(f"DEBUG: Error creating entry from row {row_idx}: {e}")
-                else:
-                    if row_idx < 5:  # Only log first few problematic rows
-                        logger.warning(f"DEBUG: Skipping row {row_idx} - has {len(row)} columns, expected 3")
+                        # Log errors but continue processing
+                        pass
         
-        logger.info(f"DEBUG: Processed {row_count} rows, created {len(entries)} entries")
         return entries
     
     @staticmethod

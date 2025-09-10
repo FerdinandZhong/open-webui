@@ -20,22 +20,8 @@ app = Flask(__name__, template_folder='flask_ui/templates', static_folder='flask
 
 logger = setup_logger(__name__)
 
-# Check environment variables
-print(f"DEBUG: OPENAI_API_KEY: {'*' * 10 if os.environ.get('OPENAI_API_KEY') else 'NOT SET'}")
-print(f"DEBUG: USE_LLM: {os.environ.get('USE_LLM', 'NOT SET')}")
-print(f"DEBUG: SDN_FILE_PATH env: {os.environ.get('SDN_FILE_PATH', 'NOT SET')}")
-
 # Initialize search service directly
-# Use the direct path since file exists
 SDN_FILE_PATH = "/home/cdsw/data_list/sdn_final.csv"
-print(f"DEBUG: Using SDN file at: {SDN_FILE_PATH}")
-print(f"DEBUG: File exists: {os.path.exists(SDN_FILE_PATH)}")
-
-if os.path.exists(SDN_FILE_PATH):
-    file_size = os.path.getsize(SDN_FILE_PATH)
-    print(f"DEBUG: File size: {file_size} bytes")
-else:
-    print("DEBUG: File does not exist!")
 
 try:
     search_service = SDNSearchService(SDN_FILE_PATH, use_llm=settings.use_llm)

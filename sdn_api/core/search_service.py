@@ -16,11 +16,7 @@ class SDNSearchService:
     """Main search service combining both steps."""
     
     def __init__(self, sdn_file_path: str, use_llm: bool = True):
-        import os
         logger.info(f"Initializing SDNSearchService with LLM: {use_llm}")
-        logger.info(f"DEBUG: OPENAI_API_KEY in search_service: {'SET' if os.environ.get('OPENAI_API_KEY') else 'NOT SET'}")
-        logger.info(f"DEBUG: SDN file path: {sdn_file_path}")
-        logger.info(f"DEBUG: File exists: {os.path.exists(sdn_file_path)}")
         
         self.loader = SDNDataLoader(sdn_file_path)
         logger.debug("Data loader initialized")
@@ -39,9 +35,7 @@ class SDNSearchService:
     
     def load_data(self):
         """Load SDN data into memory."""
-        logger.info("DEBUG: Starting to load entries from data loader")
         self.entries = self.loader.load_entries()
-        logger.info(f"DEBUG: Data loader returned {len(self.entries)} entries")
     
     def search(self, query: str, max_results: int = 10) -> List[MatchResult]:
         """
