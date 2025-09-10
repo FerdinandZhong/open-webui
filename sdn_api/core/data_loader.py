@@ -26,16 +26,18 @@ class SDNDataLoader:
             reader = csv.reader(f)
             for row_idx, row in enumerate(reader):
                 row_count += 1
-                logger.info(f"DEBUG: Row {row_idx}: {len(row)} columns - {row[:3] if row else 'empty'}")
+                if row_idx < 5:  # Only log first few rows
+                    logger.info(f"DEBUG: Row {row_idx}: {len(row)} columns - {row[:3] if row else 'empty'}")
                 
                 if row_idx == 0:  # Skip header
                     continue
                     
-                if len(row) >= 3:  # Adjust for our CSV format: uid, name, details
+                if len(row) == 3:  # Simple CSV: uid, name, details
                     try:
-                        # Parse the details field to extract type and aliases
-                        details = row[2] if len(row) > 2 else ""
-                        entry_type = ""
+                        uid, name, details = row
+                        
+                        # Simple parsing of details field
+                        entry_type = "Entity"  # Default
                         aliases = []
                         
                         if "Type:" in details:
@@ -46,30 +48,29 @@ class SDNDataLoader:
                         if "Aliases:" in details:
                             alias_match = re.search(r'Aliases:\s*(.+)', details)
                             if alias_match:
-                                aliases = [alias.strip() for alias in alias_match.group(1).split(';')]
+                                aliases_str = alias_match.group(1).strip()
+                                aliases = [alias.strip() for alias in aliases_str.split(';') if alias.strip()]
                         
-                        entry_dict = {
-                            'id': row[0],
-                            'name': row[1].strip(),
-                            'type': entry_type,
-                            'program': 'SDN',  # Default program
-                            'title': '',
-                            'remarks': details,
-                            'dob': None,
-                            'nationality': None,
-                            'pob': None,
-                            'aliases': aliases
-                        }
+                        entry = SDNEntry(
+                            id=uid,
+                            name=name.strip(),
+                            type=entry_type,
+                            program='SDN',
+                            title='',
+                            remarks=details,
+                            dob=None,
+                            nationality=None,
+                            pob=None,
+                            aliases=aliases
+                        )
                         
-                        entries.append(SDNEntry(**entry_dict))
-                        logger.debug(f"DEBUG: Created entry for {entry_dict['name']}")
+                        entries.append(entry)
+                        
                     except Exception as e:
                         logger.error(f"DEBUG: Error creating entry from row {row_idx}: {e}")
                 else:
-                    logger.warning(f"DEBUG: Skipping row {row_idx} - only {len(row)} columns")
-                    
-                if row_idx >= 10:  # Limit debug output
-                    break
+                    if row_idx < 5:  # Only log first few problematic rows
+                        logger.warning(f"DEBUG: Skipping row {row_idx} - has {len(row)} columns, expected 3")
         
         logger.info(f"DEBUG: Processed {row_count} rows, created {len(entries)} entries")
         return entries
