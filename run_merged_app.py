@@ -84,10 +84,5 @@ if __name__ == '__main__':
     
     HOST = '0.0.0.0'
     PORT = os.getenv('CDSW_READONLY_PORT', '8090')
-    
-    print(f"Starting Flask app on {HOST}:{PORT}")
-    print(f"SDN data loaded: {len(search_service.entries) if search_service else 0} entries")
-    sys.stdout.flush()
-    
     # Run the Flask app
     app.run(host="127.0.0.1", port=int(PORT))
