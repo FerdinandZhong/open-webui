@@ -44,7 +44,7 @@ jobs:
   # Deploy API application
   deploy_api:
     name: "Deploy SDN API"
-    script: "run_api.py"
+    script: "scripts/run_sdn_api.py"
     arguments: ""
     kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
@@ -62,7 +62,7 @@ jobs:
   # Deploy Flask UI
   deploy_ui:
     name: "Deploy Flask UI"
-    script: "flask_ui/run.py"
+    script: "scripts/run_flask_ui.py"
     arguments: ""
     kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
