@@ -200,7 +200,7 @@ def main():
         for app in created_apps:
             print(f"  - {app['name']} (ID: {app['id']})")
     else:
-        print("❌ No applications were created successfully")
+        print("❌ No applications were created successfully ")
         sys.exit(1)
 
 
