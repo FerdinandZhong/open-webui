@@ -41,38 +41,16 @@ jobs:
     environment:
       DATA_DIR: "data_list"
     
-  # Deploy API application
-  deploy_api:
-    name: "Deploy SDN API"
-    script: "scripts/run_sdn_api.py"
-    arguments: ""
-    kernel: "python3"
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
-    cpu: 4
-    memory: 8
-    gpu: 0
-    timeout: 86400  # 24 hours
-    parent_job_key: "download_ofac_list"
-    environment:
-      API_HOST: "0.0.0.0"
-      API_PORT: "8000"
-      USE_LLM: "true"
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"  # Must be set in CML secrets
-    
-  # Deploy Flask UI
-  deploy_ui:
-    name: "Deploy Flask UI"
-    script: "scripts/run_flask_ui.py"
-    arguments: ""
-    kernel: "python3"
+  create_applications:
+    name: Create CML Applications
+    script: env_run.py
+    kernel: python3
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
     cpu: 2
     memory: 4
-    gpu: 0
-    timeout: 86400  # 24 hours
+    timeout: 1800  # 30 minutes
     parent_job_key: "download_ofac_list"
+    arguments: ""
     environment:
-      FLASK_APP: "flask_ui.app.app"
-      FLASK_ENV: "production"
       USE_LLM: "true"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
