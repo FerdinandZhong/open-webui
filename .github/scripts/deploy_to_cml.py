@@ -25,8 +25,11 @@ class CMLDeployer:
             print("Required: CML_HOST, CML_API_KEY")
             sys.exit(1)
 
+        # Clean the host URL - remove any trailing slashes and whitespace
+        self.cml_host = self.cml_host.strip().rstrip('/')
+        
         # Setup API base URL and headers - Use v2 API with Bearer token (confirmed working)
-        self.api_url = f"{self.cml_host.rstrip('/')}/api/v2"
+        self.api_url = f"{self.cml_host}/api/v2"
 
         # Debug: Print API key format (first/last few chars only for security)
         if self.api_key:
