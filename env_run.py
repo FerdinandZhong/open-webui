@@ -33,7 +33,7 @@ class CMLApplicationCreator:
             print("Missing required environment variables:")
             print(f"  CDSW_PROJECT_ID: {self.project_id}")
             print(f"  CDSW_API_URL: {self.api_base}")
-            print(f"  CDSW_API_KEY: {'Set' if self.api_key else 'Not set'}")
+            print(f"  CDSW_API_KEY : {'Set' if self.api_key else 'Not set'}")
             sys.exit(1)
         
         # Use Bearer token authentication with CDSW API key
