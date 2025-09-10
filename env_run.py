@@ -84,6 +84,16 @@ def create_or_update_application(project_id, app_config):
         app = client.create_application(app_body, project_id=project_id)
         app_id = app.id
         print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
+        
+        # Try to start the application
+        try:
+            print(f"▶️  Starting application: {app_config['name']}")
+            client.restart_application(project_id=project_id, application_id=app_id)
+            print(f"✅ Application start initiated")
+        except Exception as e:
+            print(f"⚠️  Could not start application automatically: {e}")
+            print("   You may need to start it manually from the CML UI")
+        
         return app_id
         
     except Exception as e:
@@ -162,7 +172,8 @@ def main():
                 "FLASK_ENV": "production",
                 "USE_LLM": "true",
                 "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
-                "CDSW_READONLY_PORT": "8090"
+                "CDSW_READONLY_PORT": "8090",
+                "SDN_FILE_PATH": "data_list/sdn_final.csv"
             },
             "runtime_id": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
         }
@@ -181,15 +192,10 @@ def main():
         else:
             print(f"❌ Failed to create {app_config['name']}")
     
-    # Wait for applications to start
+    # Don't wait for applications to start - let them start asynchronously
     print("\n" + "=" * 60)
-    print("Waiting for applications to start...")
+    print("Applications will start in the background...")
     print("=" * 60)
-    
-    for app in created_apps:
-        success = wait_for_application(project_id, app["id"], timeout_seconds=300)
-        if not success:
-            print(f"⚠️  Application {app['name']} may not have started properly")
     
     print("\n" + "=" * 60)
     print("✅ CML Application creation completed!")
