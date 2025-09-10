@@ -7,17 +7,10 @@ This script creates both the SDN API and Flask UI as CML applications.
 import os
 import sys
 import time
-import requests
 from typing import Dict, Any, Optional
 
-try:
-    import cmlapi
-    from cmlapi.rest import ApiException
-    HAS_CMLAPI = True
-except ImportError:
-    print("⚠️  cmlapi library not found. Will use direct API calls...")
-    HAS_CMLAPI = False
-    ApiException = Exception
+import cmlapi
+from cmlapi.rest import ApiException
 
 
 class CMLApplicationCreator:
@@ -37,158 +30,57 @@ class CMLApplicationCreator:
             sys.exit(1)
         
         # Configure CML API client with CDSW credentials
-        if HAS_CMLAPI:
-            try:
-                configuration = cmlapi.Configuration()
-                configuration.host = cdsw_api_url
-                configuration.api_key = {'authorization': cdsw_api_key}
-                configuration.api_key_prefix['authorization'] = 'Bearer'
-                
-                # Create API client
-                api_client = cmlapi.ApiClient(configuration)
-                self.client = cmlapi.CMLServiceApi(api_client)
-                
-                print(f"✅ CML API client initialized")
-                print(f"Host: {cdsw_api_url}")
-                print(f"Project ID: {self.project_id}")
-            except Exception as e:
-                print(f"❌ Failed to initialize CML API client: {e}")
-                sys.exit(1)
-        else:
-            print(f"⚠️  Using direct API calls only")
+        try:
+            configuration = cmlapi.Configuration()
+            configuration.host = cdsw_api_url
+            configuration.api_key = {'authorization': cdsw_api_key}
+            configuration.api_key_prefix['authorization'] = 'Bearer'
+            
+            # Create API client
+            api_client = cmlapi.ApiClient(configuration)
+            self.client = cmlapi.CMLServiceApi(api_client)
+            
+            print(f"✅ CML API client initialized")
             print(f"Host: {cdsw_api_url}")
             print(f"Project ID: {self.project_id}")
-            self.client = None
+        except Exception as e:
+            print(f"❌ Failed to initialize CML API client: {e}")
+            sys.exit(1)
     
     def create_application(self, app_config: Dict[str, Any]) -> Optional[str]:
         """Create a CML application using cmlapi."""
         print(f"📱 Creating application: {app_config['name']}")
         
         try:
-            # Debug: Check all available methods and their signatures
-            print(f"🔍 All client methods: {[method for method in dir(self.client) if not method.startswith('_')]}")
-            app_methods = [method for method in dir(self.client) if 'app' in method.lower()]
-            print(f"🔍 Application-related methods: {app_methods}")
+            create_app_request = cmlapi.CreateApplicationRequest(
+                project_id=self.project_id,
+                name=app_config["name"],
+                description=app_config.get("description", ""),
+                script=app_config["script"],
+                kernel=app_config.get("kernel", "python3"),
+                cpu=app_config.get("cpu", 2),
+                memory=app_config.get("memory", 4),
+                nvidia_gpu=app_config.get("gpu", 0),
+                runtime_identifier=app_config.get("runtime_id", ""),
+                environment=app_config.get("environment", {}),
+                subdomain=app_config.get("subdomain", ""),
+                bypass_authentication=app_config.get("bypass_auth", True)
+            )
             
-            # Check if we can inspect method signatures
-            for method_name in app_methods:
-                method = getattr(self.client, method_name, None)
-                if method:
-                    import inspect
-                    try:
-                        sig = inspect.signature(method)
-                        print(f"   {method_name}: {sig}")
-                    except:
-                        print(f"   {method_name}: (signature unavailable)")
+            response = self.client.create_application(
+                project_id=self.project_id,
+                body=create_app_request
+            )
             
-            # Try different application creation approaches
-            # First try: standard create_application
-            try:
-                create_app_request = cmlapi.CreateApplicationRequest(
-                    project_id=self.project_id,
-                    name=app_config["name"],
-                    description=app_config.get("description", ""),
-                    script=app_config["script"],
-                    kernel=app_config.get("kernel", "python3"),
-                    cpu=app_config.get("cpu", 2),
-                    memory=app_config.get("memory", 4),
-                    nvidia_gpu=app_config.get("gpu", 0),
-                    runtime_identifier=app_config.get("runtime_id", ""),
-                    environment=app_config.get("environment", {}),
-                    subdomain=app_config.get("subdomain", ""),
-                    bypass_authentication=app_config.get("bypass_auth", True)
-                )
+            app_id = response.id
+            print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
+            return app_id
                 
-                response = self.client.create_application(
-                    project_id=self.project_id,
-                    body=create_app_request
-                )
-                
-                app_id = response.id
-                print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
-                return app_id
-                
-            except ApiException as e1:
-                print(f"⚠️  Standard create_application failed: {e1}")
-                
-                # Try alternative: create_application_v2 or direct POST
-                print("🔄 Trying alternative application creation method...")
-                
-                # Check if there's a create_application_v2 method
-                if hasattr(self.client, 'create_application_v2'):
-                    response = self.client.create_application_v2(
-                        project_id=self.project_id,
-                        body=create_app_request
-                    )
-                    app_id = response.id
-                    print(f"✅ Created application via v2: {app_config['name']} (ID: {app_id})")
-                    return app_id
-                else:
-                    raise e1
-            
         except ApiException as e:
-            print(f"⚠️  cmlapi failed: {e}")
-            print("🔄 Falling back to direct API call...")
-            return self._create_application_direct(app_config)
+            print(f"❌ Failed to create application {app_config['name']}: {e}")
+            return None
         except Exception as e:
             print(f"❌ Unexpected error creating application {app_config['name']}: {e}")
-            return None
-    
-    def _create_application_direct(self, app_config: Dict[str, Any]) -> Optional[str]:
-        """Create application using direct API calls as fallback."""
-        try:
-            # Construct API URL - try both v1 and v2
-            cdsw_api_url = os.environ.get("CDSW_API_URL", "").rstrip('/')
-            cdsw_api_key = os.environ.get("CDSW_API_KEY")
-            
-            # Try different API versions and endpoints
-            endpoints_to_try = [
-                f"{cdsw_api_url}/projects/{self.project_id}/applications",  # v1 
-                f"{cdsw_api_url.replace('/api/v1', '/api/v2')}/projects/{self.project_id}/applications",  # v2
-                f"{cdsw_api_url}/applications",  # direct applications endpoint
-                f"{cdsw_api_url}/projects/{self.project_id}/app",  # alternative naming
-            ]
-            
-            headers = {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": f"Bearer {cdsw_api_key}",
-            }
-            
-            app_data = {
-                "project_id": self.project_id,
-                "name": app_config["name"],
-                "description": app_config.get("description", ""),
-                "script": app_config["script"],
-                "kernel": app_config.get("kernel", "python3"),
-                "cpu": app_config.get("cpu", 2),
-                "memory": app_config.get("memory", 4),
-                "nvidia_gpu": app_config.get("gpu", 0),
-                "runtime_identifier": app_config.get("runtime_id", ""),
-                "environment": app_config.get("environment", {}),
-                "subdomain": app_config.get("subdomain", ""),
-                "bypass_authentication": app_config.get("bypass_auth", True)
-            }
-            
-            for endpoint in endpoints_to_try:
-                print(f"🌐 POST {endpoint}")
-                response = requests.post(endpoint, headers=headers, json=app_data, timeout=30)
-                print(f"📡 Response: {response.status_code}")
-                
-                if response.status_code >= 200 and response.status_code < 300:
-                    result = response.json()
-                    app_id = result.get("id")
-                    print(f"✅ Created application via direct API: {app_config['name']} (ID: {app_id})")
-                    return app_id
-                else:
-                    print(f"❌ Endpoint {endpoint} failed: {response.status_code}")
-                    print(f"   Response: {response.text}")
-                    
-            print("❌ All direct API endpoints failed")
-            return None
-                
-        except Exception as e:
-            print(f"❌ Direct API error: {e}")
             return None
     
     def wait_for_application(self, app_id: str, timeout_seconds: int = 300) -> bool:
