@@ -8,17 +8,39 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# Import our modules - use absolute imports from data_list
+# Import our modules - handle both Jupyter and regular Python environments
 import os
 import sys
 
-# Add the project root to the Python path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+# Add the current directory and parent to Python path for imports
+current_dir = Path.cwd()
+if 'data_list' in str(current_dir):
+    # We're in the data_list directory, go up one level
+    project_root = current_dir.parent if current_dir.name == 'data_list' else current_dir
+else:
+    # We're in project root or elsewhere
+    project_root = current_dir
 
-from data_list.download_ofac_list import OFACDownloader
-from data_list.sdn_xml_to_csv import SDNAdvancedXMLtoCSVConverter  
-from data_list.database_manager import OFACDatabaseManager
+# Add both project root and data_list directory to path
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / 'data_list'))
+
+# Try different import strategies
+try:
+    # First try relative imports (when run from data_list directory)
+    from download_ofac_list import OFACDownloader
+    from sdn_xml_to_csv import SDNAdvancedXMLtoCSVConverter
+    from database_manager import OFACDatabaseManager
+except ImportError:
+    try:
+        # Try absolute imports from project root
+        from data_list.download_ofac_list import OFACDownloader
+        from data_list.sdn_xml_to_csv import SDNAdvancedXMLtoCSVConverter  
+        from data_list.database_manager import OFACDatabaseManager
+    except ImportError as e:
+        print(f"Failed to import modules. Current directory: {Path.cwd()}")
+        print(f"Available files: {list(Path.cwd().glob('*.py'))}")
+        raise e
 
 logging.basicConfig(
     level=logging.INFO,
