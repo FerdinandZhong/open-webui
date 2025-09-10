@@ -17,5 +17,9 @@ if not os.path.exists(venv_python):
     subprocess.run(['uv', 'sync'], check=True)
 subprocess.run(['uv', 'sync'], check=True)
 
-result = subprocess.run([venv_python, "run_merged_app.py"])
+# Pass through all environment variables including OPENAI_API_KEY
+env = os.environ.copy()
+env['SDN_FILE_PATH'] = '/home/cdsw/data_list/sdn_final.csv'
+
+result = subprocess.run([venv_python, "run_merged_app.py"], env=env)
 sys.exit(result.returncode)
