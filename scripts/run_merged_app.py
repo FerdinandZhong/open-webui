@@ -36,6 +36,10 @@ def main():
     print(f"SDN file: {os.environ['SDN_FILE_PATH']}")
 
     # Run merged application with venv Python
+    print("Starting Flask application...")
+    sys.stdout.flush()
+    
+    # Use subprocess.run which will wait for the process to complete
     result = subprocess.run([venv_python, "run_merged_app.py"])
     sys.exit(result.returncode)
 
