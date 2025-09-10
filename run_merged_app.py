@@ -21,14 +21,26 @@ app = Flask(__name__, template_folder='flask_ui/templates', static_folder='flask
 logger = setup_logger(__name__)
 
 # Initialize search service directly
-# Use hardcoded path for CML environment
-SDN_FILE_PATH = "/home/cdsw/" + settings.sdn_file_path
+# Use the direct path since file exists
+SDN_FILE_PATH = "/home/cdsw/data_list/sdn_final.csv"
+print(f"DEBUG: Using SDN file at: {SDN_FILE_PATH}")
+print(f"DEBUG: File exists: {os.path.exists(SDN_FILE_PATH)}")
+
+if os.path.exists(SDN_FILE_PATH):
+    file_size = os.path.getsize(SDN_FILE_PATH)
+    print(f"DEBUG: File size: {file_size} bytes")
+else:
+    print("DEBUG: File does not exist!")
+
 try:
     search_service = SDNSearchService(SDN_FILE_PATH, use_llm=settings.use_llm)
     logger.info(f"Initialized SDN Search Service with LLM: {settings.use_llm}")
     logger.info(f"SDN file path: {SDN_FILE_PATH}")
 except FileNotFoundError:
     logger.error(f"SDN file not found at {SDN_FILE_PATH}")
+    search_service = None
+except Exception as e:
+    logger.error(f"Error loading SDN file: {e}")
     search_service = None
 
 @app.route('/')
