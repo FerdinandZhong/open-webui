@@ -27,7 +27,7 @@ def main():
     print(f"Port: {os.environ['CDSW_READONLY_PORT']}")
 
     # Run merged application with venv Python
-    result = subprocess.run([venv_python, "env_run.py"])
+    result = subprocess.run([venv_python, "run_merged_app.py"])
     sys.exit(result.returncode)
 
 
