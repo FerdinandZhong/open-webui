@@ -30,6 +30,9 @@ class CMLDeployer:
 
         # Debug: Print API key format (first/last few chars only for security)
         if self.api_key:
+            # Clean any potential whitespace or quotes
+            self.api_key = self.api_key.strip().strip('"').strip("'")
+            
             if "." in self.api_key and len(self.api_key) > 100:
                 print(
                     f"🔑 Token format: {self.api_key[:16]}...{self.api_key[-16:]} (length: {len(self.api_key)})"
@@ -92,15 +95,26 @@ class CMLDeployer:
             if response.status_code >= 200 and response.status_code < 300:
                 if response.text:
                     try:
+                        # Try to parse JSON
                         return response.json()
-                    except json.JSONDecodeError as e:
-                        print(f"⚠️  Response not valid JSON: {e}")
-                        print(f"   Content-Type: {content_type}")
-                        print(f"   Response text: {response.text[:500]}")
-                        # Some endpoints might return empty or non-JSON responses
-                        if response.status_code == 200 and not response.text.strip():
+                    except (json.JSONDecodeError, ValueError) as e:
+                        # If it fails, check if it's actually empty or whitespace
+                        cleaned = response.text.strip()
+                        if not cleaned or cleaned == '""' or cleaned == "''":
+                            print(f"ℹ️  Empty response received")
                             return {}
-                        return None
+                        
+                        # Try one more time with cleaned text
+                        try:
+                            return json.loads(cleaned)
+                        except:
+                            print(f"⚠️  Response not valid JSON: {e}")
+                            print(f"   Content-Type: {content_type}")
+                            print(f"   Response text: {response.text[:500]}")
+                            # For some operations, empty response is ok
+                            if response.status_code == 200:
+                                return {}
+                            return None
                 return {}
             else:
                 print(f"❌ API request failed: {response.status_code} ")
