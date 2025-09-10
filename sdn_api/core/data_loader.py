@@ -16,30 +16,62 @@ class SDNDataLoader:
     
     def load_entries(self) -> List[SDNEntry]:
         """Load and parse all SDN entries from CSV file."""
+        from ..utils.logger import setup_logger
+        logger = setup_logger(__name__)
+        
         entries = []
+        row_count = 0
         
         with open(self.sdn_file_path, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
-            for row in reader:
-                if len(row) >= 12:
-                    entry_dict = {
-                        'id': row[0],
-                        'name': row[1].strip('"'),
-                        'type': row[2].strip() if row[2] != '-0-' else '',
-                        'program': row[3].strip('"') if row[3] != '-0-' else '',
-                        'title': row[4].strip('"') if row[4] != '-0-' else '',
-                        'remarks': row[11].strip('"') if row[11] != '-0-' else '',
-                    }
+            for row_idx, row in enumerate(reader):
+                row_count += 1
+                logger.info(f"DEBUG: Row {row_idx}: {len(row)} columns - {row[:3] if row else 'empty'}")
+                
+                if row_idx == 0:  # Skip header
+                    continue
                     
-                    # Parse additional info from remarks
-                    remarks = entry_dict['remarks']
-                    entry_dict['dob'] = self._extract_dob(remarks)
-                    entry_dict['nationality'] = self._extract_nationality(remarks)
-                    entry_dict['pob'] = self._extract_pob(remarks)
-                    entry_dict['aliases'] = self._extract_aliases(remarks)
+                if len(row) >= 3:  # Adjust for our CSV format: uid, name, details
+                    try:
+                        # Parse the details field to extract type and aliases
+                        details = row[2] if len(row) > 2 else ""
+                        entry_type = ""
+                        aliases = []
+                        
+                        if "Type:" in details:
+                            type_match = re.search(r'Type:\s*([^|]+)', details)
+                            if type_match:
+                                entry_type = type_match.group(1).strip()
+                        
+                        if "Aliases:" in details:
+                            alias_match = re.search(r'Aliases:\s*(.+)', details)
+                            if alias_match:
+                                aliases = [alias.strip() for alias in alias_match.group(1).split(';')]
+                        
+                        entry_dict = {
+                            'id': row[0],
+                            'name': row[1].strip(),
+                            'type': entry_type,
+                            'program': 'SDN',  # Default program
+                            'title': '',
+                            'remarks': details,
+                            'dob': None,
+                            'nationality': None,
+                            'pob': None,
+                            'aliases': aliases
+                        }
+                        
+                        entries.append(SDNEntry(**entry_dict))
+                        logger.debug(f"DEBUG: Created entry for {entry_dict['name']}")
+                    except Exception as e:
+                        logger.error(f"DEBUG: Error creating entry from row {row_idx}: {e}")
+                else:
+                    logger.warning(f"DEBUG: Skipping row {row_idx} - only {len(row)} columns")
                     
-                    entries.append(SDNEntry(**entry_dict))
+                if row_idx >= 10:  # Limit debug output
+                    break
         
+        logger.info(f"DEBUG: Processed {row_count} rows, created {len(entries)} entries")
         return entries
     
     @staticmethod
