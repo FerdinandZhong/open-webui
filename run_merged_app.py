@@ -5,6 +5,7 @@ No separate API server needed.
 """
 from flask import Flask, render_template, request, jsonify
 import os
+import sys
 from pathlib import Path
 import traceback
 from dotenv import load_dotenv
@@ -20,10 +21,12 @@ app = Flask(__name__, template_folder='flask_ui/templates', static_folder='flask
 logger = setup_logger(__name__)
 
 # Initialize search service directly
-SDN_FILE_PATH = Path(__file__).parent / settings.sdn_file_path
+# Use hardcoded path for CML environment
+SDN_FILE_PATH = "/home/cdsw/" + settings.sdn_file_path
 try:
-    search_service = SDNSearchService(str(SDN_FILE_PATH), use_llm=settings.use_llm)
+    search_service = SDNSearchService(SDN_FILE_PATH, use_llm=settings.use_llm)
     logger.info(f"Initialized SDN Search Service with LLM: {settings.use_llm}")
+    logger.info(f"SDN file path: {SDN_FILE_PATH}")
 except FileNotFoundError:
     logger.error(f"SDN file not found at {SDN_FILE_PATH}")
     search_service = None
@@ -79,12 +82,18 @@ def stats():
 if __name__ == '__main__':
     print("Starting merged SDN Flask application...")
     
-    # For CML applications, use CDSW_APP_PORT if available
-    PORT = os.getenv('CDSW_APP_PORT', os.getenv('CDSW_READONLY_PORT', '8090'))
-    HOST = '0.0.0.0'  # Bind to all interfaces for CML
+    # CML applications should use CDSW_APP_PORT 
+    PORT = os.getenv('CDSW_APP_PORT', '8090')
+    if not PORT:
+        PORT = os.getenv('CDSW_READONLY_PORT', '8090')
+    
+    # CRITICAL: Bind to 0.0.0.0 for CML to access the app
+    HOST = '0.0.0.0'
     
     print(f"Starting Flask app on {HOST}:{PORT}")
     print(f"SDN data loaded: {len(search_service.entries) if search_service else 0} entries")
+    print(f"Flask will be available on all network interfaces")
+    sys.stdout.flush()
     
-    # Run the Flask app
-    app.run(host=HOST, port=int(PORT), debug=False, threaded=True)
+    # Run the Flask app - this will block and keep running
+    app.run(host=HOST, port=int(PORT), debug=False)
