@@ -172,7 +172,7 @@ def main():
     
     # Create each application
     for app_config in applications:
-        app_id = create_application(project_id, app_config)
+        app_id = create_or_update_application(project_id, app_config)
         if app_id:
             created_apps.append({
                 "id": app_id,
