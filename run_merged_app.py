@@ -82,18 +82,12 @@ def stats():
 if __name__ == '__main__':
     print("Starting merged SDN Flask application...")
     
-    # CML applications should use CDSW_APP_PORT 
-    PORT = os.getenv('CDSW_APP_PORT', '8090')
-    if not PORT:
-        PORT = os.getenv('CDSW_READONLY_PORT', '8090')
-    
-    # CRITICAL: Bind to 0.0.0.0 for CML to access the app
     HOST = '0.0.0.0'
+    PORT = os.getenv('CDSW_READONLY_PORT', '8090')
     
     print(f"Starting Flask app on {HOST}:{PORT}")
     print(f"SDN data loaded: {len(search_service.entries) if search_service else 0} entries")
-    print(f"Flask will be available on all network interfaces")
     sys.stdout.flush()
     
-    # Run the Flask app - this will block and keep running
-    app.run(host=HOST, port=int(PORT), debug=False)
+    # Run the Flask app
+    app.run(host="127.0.0.1", port=int(PORT))

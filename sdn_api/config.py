@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     use_llm: bool = os.getenv("USE_LLM", "true").lower() == "true"
     
     # SDN Data Configuration
-    sdn_file_path: str = os.getenv("SDN_FILE_PATH", "data/sdn.csv")
+    sdn_file_path: str = os.getenv("SDN_FILE_PATH", "/home/cdsw/data_list/sdn_final.csv")
     
     # API Configuration
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
