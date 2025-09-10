@@ -38,10 +38,9 @@ class CMLApplicationCreator:
         
         # Configure CML API client with CDSW credentials
         try:
-            configuration = cmlapi.Configuration(
-                host=cdsw_api_url,
-                api_key={'authorization': cdsw_api_key}
-            )
+            configuration = cmlapi.Configuration()
+            configuration.host = cdsw_api_url
+            configuration.api_key = {'authorization': cdsw_api_key}
             configuration.api_key_prefix['authorization'] = 'Bearer'
             
             # Create API client
