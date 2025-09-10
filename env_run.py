@@ -9,90 +9,73 @@ import sys
 import time
 from typing import Dict, Any, Optional
 
-import cmlapi
-from cmlapi.rest import ApiException
+try:
+    import cmlapi
+    print("✅ cmlapi is available")
+except ImportError:
+    print("❌ cmlapi not available - should have been installed during environment setup")
+    sys.exit(1)
 
 
-class CMLApplicationCreator:
-    """Create CML Applications using the cmlapi library."""
+def create_application(project_id, app_config):
+    """Create a CML application using cmlapi SDK."""
+    print(f"📱 Creating application: {app_config['name']}")
     
-    def __init__(self):
-        """Initialize the application creator."""
-        self.project_id = os.environ.get("CDSW_PROJECT_ID")
-        cdsw_api_url = os.environ.get("CDSW_API_URL")
-        cdsw_api_key = os.environ.get("CDSW_API_KEY")
+    try:
+        # Create CML API client - uses default CML environment credentials
+        client = cmlapi.default_client()
         
-        if not all([self.project_id, cdsw_api_url, cdsw_api_key]):
-            print("Missing required environment variables:")
-            print(f"  CDSW_PROJECT_ID: {self.project_id}")
-            print(f"  CDSW_API_URL: {cdsw_api_url}")
-            print(f"  CDSW_API_KEY: {'Set' if cdsw_api_key else 'Not set'}")
-            sys.exit(1)
+        # Create application request
+        app_body = cmlapi.CreateApplicationRequest()
         
-        # Configure CML API client with CDSW credentials
-        try:
-            configuration = cmlapi.Configuration()
-            configuration.host = cdsw_api_url
-            configuration.api_key = {'authorization': cdsw_api_key}
-            configuration.api_key_prefix['authorization'] = 'Bearer'
+        # Basic application properties
+        app_body.name = app_config["name"]
+        app_body.description = app_config.get("description", "")
+        app_body.script = app_config["script"]
+        app_body.kernel = app_config.get("kernel", "python3")
+        
+        # Resource configuration
+        app_body.cpu = float(app_config.get("cpu", 2))
+        app_body.memory = float(app_config.get("memory", 4))
+        app_body.nvidia_gpu = int(app_config.get("gpu", 0))
+        
+        # Runtime identifier if specified
+        if app_config.get("runtime_id"):
+            app_body.runtime_identifier = app_config["runtime_id"]
             
-            # Create API client
-            api_client = cmlapi.ApiClient(configuration)
-            self.client = cmlapi.CMLServiceApi(api_client)
-            
-            print(f"✅ CML API client initialized")
-            print(f"Host: {cdsw_api_url}")
-            print(f"Project ID: {self.project_id}")
-        except Exception as e:
-            print(f"❌ Failed to initialize CML API client: {e}")
-            sys.exit(1)
+        # Environment variables
+        app_body.environment = app_config.get("environment", {})
+        
+        # Application-specific settings
+        if app_config.get("subdomain"):
+            app_body.subdomain = app_config["subdomain"]
+        app_body.bypass_authentication = app_config.get("bypass_auth", True)
+        
+        # Create the application
+        app = client.create_application(app_body, project_id=project_id)
+        app_id = app.id
+        print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
+        return app_id
+        
+    except Exception as e:
+        print(f"❌ Error creating application {app_config['name']}: {e}")
+        return None
+
+
+def wait_for_application(project_id, app_id, timeout_seconds=300):
+    """Wait for application to be running."""
+    print(f"⏳ Waiting for application {app_id} to start...")
     
-    def create_application(self, app_config: Dict[str, Any]) -> Optional[str]:
-        """Create a CML application using cmlapi."""
-        print(f"📱 Creating application: {app_config['name']}")
-        
-        try:
-            create_app_request = cmlapi.CreateApplicationRequest(
-                project_id=self.project_id,
-                name=app_config["name"],
-                description=app_config.get("description", ""),
-                script=app_config["script"],
-                kernel=app_config.get("kernel", "python3"),
-                cpu=app_config.get("cpu", 2),
-                memory=app_config.get("memory", 4),
-                nvidia_gpu=app_config.get("gpu", 0),
-                runtime_identifier=app_config.get("runtime_id", ""),
-                environment=app_config.get("environment", {}),
-                subdomain=app_config.get("subdomain", ""),
-                bypass_authentication=app_config.get("bypass_auth", True)
-            )
-            
-            response = self.client.create_application(
-                project_id=self.project_id,
-                body=create_app_request
-            )
-            
-            app_id = response.id
-            print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
-            return app_id
-                
-        except ApiException as e:
-            print(f"❌ Failed to create application {app_config['name']}: {e}")
-            return None
-        except Exception as e:
-            print(f"❌ Unexpected error creating application {app_config['name']}: {e}")
-            return None
-    
-    def wait_for_application(self, app_id: str, timeout_seconds: int = 300) -> bool:
-        """Wait for application to be running."""
-        print(f"⏳ Waiting for application {app_id} to start...")
+    try:
+        # Create CML API client
+        client = cmlapi.default_client()
         
         start_time = time.time()
         while time.time() - start_time < timeout_seconds:
             try:
                 # Get application status
-                app = self.client.get_application(
-                    project_id=self.project_id,
+                app = client.get_application(
+                    project_id=project_id,
                     application_id=app_id
                 )
                 
@@ -107,12 +90,16 @@ class CMLApplicationCreator:
                     print(f"❌ Application failed to start: {status}")
                     return False
                     
-            except ApiException as e:
+            except Exception as e:
                 print(f"⚠️  Error checking application status: {e}")
             
             time.sleep(10)  # Check every 10 seconds
         
         print("⏰ Application did not start within timeout")
+        return False
+        
+    except Exception as e:
+        print(f"❌ Error waiting for application: {e}")
         return False
 
 
@@ -122,7 +109,13 @@ def main():
     print("Creating CML Applications for SDN Screening System")
     print("=" * 60)
     
-    creator = CMLApplicationCreator()
+    # Get project ID
+    project_id = os.getenv("CDSW_PROJECT_ID")
+    if not project_id:
+        print("❌ CDSW_PROJECT_ID environment variable not set")
+        sys.exit(1)
+    
+    print(f"📋 Project ID: {project_id}")
     
     # Define applications to create
     applications = [
@@ -168,7 +161,7 @@ def main():
     
     # Create each application
     for app_config in applications:
-        app_id = creator.create_application(app_config)
+        app_id = create_application(project_id, app_config)
         if app_id:
             created_apps.append({
                 "id": app_id,
@@ -183,7 +176,7 @@ def main():
     print("=" * 60)
     
     for app in created_apps:
-        success = creator.wait_for_application(app["id"], timeout_seconds=300)
+        success = wait_for_application(project_id, app["id"], timeout_seconds=300)
         if not success:
             print(f"⚠️  Application {app['name']} may not have started properly")
     
