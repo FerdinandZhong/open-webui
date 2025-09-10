@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Deploy data-creation project to Cloudera Machine Learning using REST API.
+Deploy sdn-screening project to Cloudera Machine Learning using REST API.
 Creates a project, uploads code, and sets up jobs.
 """
 
@@ -25,17 +25,11 @@ class CMLDeployer:
             print("Required: CML_HOST, CML_API_KEY")
             sys.exit(1)
 
-        # Clean the host URL - remove any trailing slashes and whitespace
-        self.cml_host = self.cml_host.strip().rstrip('/')
-        
         # Setup API base URL and headers - Use v2 API with Bearer token (confirmed working)
-        self.api_url = f"{self.cml_host}/api/v2"
+        self.api_url = f"{self.cml_host.rstrip('/')}/api/v2"
 
         # Debug: Print API key format (first/last few chars only for security)
         if self.api_key:
-            # Clean any potential whitespace or quotes
-            self.api_key = self.api_key.strip().strip('"').strip("'")
-            
             if "." in self.api_key and len(self.api_key) > 100:
                 print(
                     f"🔑 Token format: {self.api_key[:16]}...{self.api_key[-16:]} (length: {len(self.api_key)})"
@@ -47,23 +41,17 @@ class CMLDeployer:
 
         # Use Bearer token authentication (confirmed working with your CML instance)
         self.headers = {
-            "Authorization": f"Bearer {self.api_key.strip()}",
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "CML-Deploy-Script/1.0",
-            "Cache-Control": "no-cache"
+            "Authorization": f"Bearer {self.api_key.strip()}",
         }
 
         # Verify authentication by testing API access
-        # Skip verification in GitHub Actions if we're getting HTML responses
-        if os.environ.get("GITHUB_ACTIONS"):
-            print("🔄 Running in GitHub Actions - skipping auth verification")
-            print("💡 Will attempt deployment and fail gracefully if auth issues")
-        else:
-            if not self.verify_authentication():
-                print("❌ Failed to authenticate with CML API")
-                sys.exit(1)
-            print("✅ Authentication verified")
+        if not self.verify_authentication():
+            print("❌ Failed to authenticate with CML API")
+            sys.exit(1)
+
+        print("✅ Authentication verified")
 
     def make_request(
         self, method: str, endpoint: str, data: Dict = None, files: Dict = None, params: Dict = None
@@ -73,7 +61,6 @@ class CMLDeployer:
 
         # Debug: Print request details (without sensitive headers)
         print(f"🌐 {method} {url}")
-        print(f"🔍 Headers: Content-Type, Accept, User-Agent, Cache-Control")
 
         try:
             headers = self.headers.copy()
@@ -92,39 +79,11 @@ class CMLDeployer:
             )
 
             print(f"📡 Response: {response.status_code}")
-            
-            # Check content type
-            content_type = response.headers.get('content-type', '')
-            if 'text/html' in content_type:
-                print(f"⚠️  Received HTML response instead of JSON")
-                print(f"   This might indicate a redirect or authentication page")
-                print(f"   Response preview: {response.text[:200]}")
-                return None
 
             # Check for success
             if response.status_code >= 200 and response.status_code < 300:
                 if response.text:
-                    try:
-                        # Try to parse JSON
-                        return response.json()
-                    except (json.JSONDecodeError, ValueError) as e:
-                        # If it fails, check if it's actually empty or whitespace
-                        cleaned = response.text.strip()
-                        if not cleaned or cleaned == '""' or cleaned == "''":
-                            print(f"ℹ️  Empty response received")
-                            return {}
-                        
-                        # Try one more time with cleaned text
-                        try:
-                            return json.loads(cleaned)
-                        except:
-                            print(f"⚠️  Response not valid JSON: {e}")
-                            print(f"   Content-Type: {content_type}")
-                            print(f"   Response text: {response.text[:500]}")
-                            # For some operations, empty response is ok
-                            if response.status_code == 200:
-                                return {}
-                            return None
+                    return response.json()
                 return {}
             else:
                 print(f"❌ API request failed: {response.status_code} ")
@@ -148,33 +107,13 @@ class CMLDeployer:
     def verify_authentication(self) -> bool:
         """Verify authentication by testing API access."""
         # Try to list projects as a simple auth test
-        try:
-            result = self.make_request("GET", "projects")
-            # If we get a result (even empty dict), consider it authenticated
-            if result is not None or result == {}:
-                return True
-            
-            # Also try a simpler endpoint - user info
-            print("🔄 Trying alternative authentication check...")
-            user_result = self.make_request("GET", "users/current")
-            return user_result is not None
-        except Exception as e:
-            print(f"⚠️  Authentication check error: {e}")
-            # If we're getting responses but having parsing issues, might still be authenticated
-            # Try to proceed anyway
-            print("💡 Proceeding despite authentication check issues...")
-            return True
+        result = self.make_request("GET", "projects")
+        return result is not None
 
     def list_projects(self) -> list:
         """List all projects."""
         result = self.make_request("GET", "projects")
-        if result and isinstance(result, dict):
-            return result.get("projects", [])
-        elif result is None:
-            # If we get HTML response, try a different approach
-            print("⚠️  Projects list failed - might be auth issue")
-            return []
-        return []
+        return result.get("projects", []) if result else []
 
     def search_projects(self, project_name: str) -> Optional[str]:
         """Search for a project by name using the search API."""
