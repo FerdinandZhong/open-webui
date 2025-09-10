@@ -17,13 +17,41 @@ except ImportError:
     sys.exit(1)
 
 
-def create_application(project_id, app_config):
-    """Create a CML application using cmlapi SDK."""
-    print(f"📱 Creating application: {app_config['name']}")
+def list_applications(client, project_id):
+    """List all applications in the project."""
+    try:
+        apps = client.list_applications(project_id=project_id)
+        app_dict = {}
+        for app in apps.applications:
+            app_dict[app.name] = app.id
+        return app_dict
+    except Exception as e:
+        print(f"⚠️  Could not list existing applications: {e}")
+        return {}
+
+
+def create_or_update_application(project_id, app_config):
+    """Create or update a CML application using cmlapi SDK."""
+    print(f"📱 Processing application: {app_config['name']}")
     
     try:
         # Create CML API client - uses default CML environment credentials
         client = cmlapi.default_client()
+        
+        # Check for existing applications
+        existing_apps = list_applications(client, project_id)
+        app_id = None
+        
+        if app_config["name"] in existing_apps:
+            # Delete existing application to recreate with new settings
+            app_id = existing_apps[app_config["name"]]
+            print(f"🗑️  Deleting existing application: {app_config['name']} (ID: {app_id})")
+            try:
+                client.delete_application(project_id=project_id, application_id=app_id)
+                print(f"✅ Deleted existing application")
+                time.sleep(2)  # Wait for deletion to complete
+            except Exception as e:
+                print(f"⚠️  Could not delete existing application: {e}")
         
         # Create application request
         app_body = cmlapi.CreateApplicationRequest()
@@ -52,6 +80,7 @@ def create_application(project_id, app_config):
         app_body.bypass_authentication = app_config.get("bypass_auth", True)
         
         # Create the application
+        print(f"📦 Creating new application: {app_config['name']}")
         app = client.create_application(app_body, project_id=project_id)
         app_id = app.id
         print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
@@ -127,7 +156,7 @@ def main():
             "cpu": 4,
             "memory": 8,
             "gpu": 0,
-            "subdomain": "sdn-app",
+            "subdomain": "sdn-screening",
             "bypass_auth": True,
             "environment": {
                 "FLASK_ENV": "production",
