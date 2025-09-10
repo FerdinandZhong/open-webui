@@ -6,102 +6,77 @@ This script creates both the SDN API and Flask UI as CML applications.
 
 import os
 import sys
-import json
-import requests
 import time
 from typing import Dict, Any, Optional
 
+try:
+    import cmlapi
+    from cmlapi.rest import ApiException
+except ImportError:
+    print("❌ cmlapi library not found. Installing...")
+    import subprocess
+    subprocess.run([sys.executable, "-m", "pip", "install", "cmlapi"], check=True)
+    import cmlapi
+    from cmlapi.rest import ApiException
+
 
 class CMLApplicationCreator:
-    """Create CML Applications using the REST API."""
+    """Create CML Applications using the cmlapi library."""
     
     def __init__(self):
         """Initialize the application creator."""
         self.project_id = os.environ.get("CDSW_PROJECT_ID")
-        api_url = os.environ.get("CDSW_API_URL", "").rstrip('/')
         
-        # Convert v1 to v2 API URL for applications
-        if "/api/v1" in api_url:
-            self.api_base = api_url.replace("/api/v1", "/api/v2")
-        else:
-            self.api_base = api_url
-        
-        # Get CDSW API key for authentication
-        self.api_key = os.environ.get("CDSW_API_KEY")
-        
-        if not all([self.project_id, self.api_base, self.api_key]):
-            print("Missing required environment variables:")
+        if not self.project_id:
+            print("Missing required environment variable:")
             print(f"  CDSW_PROJECT_ID: {self.project_id}")
-            print(f"  CDSW_API_URL: {self.api_base}")
-            print(f"  CDSW_API_KEY : {'Set' if self.api_key else 'Not set'}")
             sys.exit(1)
         
-        # Use Bearer token authentication with CDSW API key
-        self.headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
-        
-        print(f"Project ID: {self.project_id}")
-        print(f"API Base: {self.api_base}")
-    
-    def make_request(self, method: str, endpoint: str, data: Dict = None) -> Optional[Dict]:
-        """Make an API request."""
-        url = f"{self.api_base}/{endpoint.lstrip('/')}"
-        print(f"🌐 {method} {url}")
-        
+        # Initialize CML API client (handles authentication automatically)
         try:
-            response = requests.request(
-                method=method,
-                url=url,
-                headers=self.headers,
-                json=data,
-                timeout=30
-            )
-            
-            print(f"📡 Response: {response.status_code}")
-            
-            if response.status_code >= 200 and response.status_code < 300:
-                if response.text:
-                    return response.json()
-                return {}
-            else:
-                print(f"❌ Request failed: {response.status_code}")
-                print(f"   Response: {response.text}")
-                return None
-                
+            self.client = cmlapi.default_client()
+            print(f"✅ CML API client initialized")
+            print(f"Project ID: {self.project_id}")
         except Exception as e:
-            print(f"❌ Request error: {e}")
-            return None
+            print(f"❌ Failed to initialize CML API client: {e}")
+            sys.exit(1)
     
     def create_application(self, app_config: Dict[str, Any]) -> Optional[str]:
-        """Create a CML application."""
+        """Create a CML application using cmlapi."""
         print(f"📱 Creating application: {app_config['name']}")
         
-        app_data = {
-            "project_id": self.project_id,
-            "name": app_config["name"],
-            "description": app_config.get("description", ""),
-            "script": app_config["script"],
-            "kernel": app_config.get("kernel", "python3"),
-            "cpu": app_config.get("cpu", 2),
-            "memory": app_config.get("memory", 4),
-            "nvidia_gpu": app_config.get("gpu", 0),
-            "runtime_identifier": app_config.get("runtime_id", ""),
-            "environment": app_config.get("environment", {}),
-            "subdomain": app_config.get("subdomain", ""),
-            "bypass_authentication": app_config.get("bypass_auth", True)
-        }
-        
-        result = self.make_request("POST", f"projects/{self.project_id}/applications", data=app_data)
-        
-        if result:
-            app_id = result.get("id")
+        try:
+            # Create application request object
+            create_app_request = cmlapi.CreateApplicationRequest(
+                project_id=self.project_id,
+                name=app_config["name"],
+                description=app_config.get("description", ""),
+                script=app_config["script"],
+                kernel=app_config.get("kernel", "python3"),
+                cpu=app_config.get("cpu", 2),
+                memory=app_config.get("memory", 4),
+                nvidia_gpu=app_config.get("gpu", 0),
+                runtime_identifier=app_config.get("runtime_id", ""),
+                environment=app_config.get("environment", {}),
+                subdomain=app_config.get("subdomain", ""),
+                bypass_authentication=app_config.get("bypass_auth", True)
+            )
+            
+            # Create the application
+            response = self.client.create_application(
+                project_id=self.project_id,
+                body=create_app_request
+            )
+            
+            app_id = response.id
             print(f"✅ Created application: {app_config['name']} (ID: {app_id})")
             return app_id
-        else:
-            print(f"❌ Failed to create application: {app_config['name']}")
+            
+        except ApiException as e:
+            print(f"❌ Failed to create application {app_config['name']}: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ Unexpected error creating application {app_config['name']}: {e}")
             return None
     
     def wait_for_application(self, app_id: str, timeout_seconds: int = 300) -> bool:
@@ -110,19 +85,26 @@ class CMLApplicationCreator:
         
         start_time = time.time()
         while time.time() - start_time < timeout_seconds:
-            result = self.make_request("GET", f"projects/{self.project_id}/applications/{app_id}")
-            
-            if result:
-                status = result.get("status", "unknown")
+            try:
+                # Get application status
+                app = self.client.get_application(
+                    project_id=self.project_id,
+                    application_id=app_id
+                )
+                
+                status = app.status
                 print(f"   Status: {status}")
                 
                 if status == "running":
-                    url = result.get("url", "")
+                    url = app.url or ""
                     print(f"✅ Application is running: {url}")
                     return True
                 elif status in ["failed", "stopped"]:
                     print(f"❌ Application failed to start: {status}")
                     return False
+                    
+            except ApiException as e:
+                print(f"⚠️  Error checking application status: {e}")
             
             time.sleep(10)  # Check every 10 seconds
         
