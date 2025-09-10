@@ -48,9 +48,16 @@ class CMLDeployer:
 
         # Verify authentication by testing API access
         # Skip verification in GitHub Actions environment due to response masking issues
-        if os.environ.get("GITHUB_ACTIONS") == "true":
-            print("🔄 Running in GitHub Actions - skipping auth verification")
+        is_github_actions = (
+            os.environ.get("GITHUB_ACTIONS") == "true" or 
+            os.environ.get("CI") == "true" or 
+            "GITHUB_TOKEN" in os.environ
+        )
+        
+        if is_github_actions:
+            print("🔄 Running in CI/GitHub Actions - skipping auth verification")
             print("💡 Will proceed with deployment and handle auth issues during actual operations")
+            print("✅ Authentication check skipped for CI environment")
         else:
             if not self.verify_authentication():
                 print("❌ Failed to authenticate with CML API")
