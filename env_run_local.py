@@ -18,7 +18,7 @@ def run():
     
     print(f"Starting merged SDN application from {current_dir}")
     print(f"Using Python: {venv_python}")
-    
+    subprocess.run(['uv', 'sync'], check=True)
     # Run merged Flask app with virtual environment
     subprocess.run([venv_python, 'run_merged_app.py'])
 
