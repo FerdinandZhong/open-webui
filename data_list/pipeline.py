@@ -194,59 +194,86 @@ def main():
     """Main function to run the pipeline"""
     import argparse
     
-    parser = argparse.ArgumentParser(description="OFAC Data Pipeline")
-    parser.add_argument(
-        "--list-type",
-        choices=["consolidated", "sdn"],
-        default="consolidated",
-        help="Type of list to process (default: consolidated)"
-    )
-    parser.add_argument(
-        "--data-dir",
-        default="data_list",
-        help="Directory for data files (default: data_list)"
-    )
-    parser.add_argument(
-        "--skip-download",
-        action="store_true",
-        help="Skip download step (use existing XML)"
-    )
-    parser.add_argument(
-        "--skip-conversion",
-        action="store_true",
-        help="Skip XML to CSV conversion (use existing CSV)"
-    )
-    parser.add_argument(
-        "--skip-import",
-        action="store_true",
-        help="Skip database import"
-    )
-    parser.add_argument(
-        "--quick",
-        action="store_true",
-        help="Quick update - skip download if file is recent"
-    )
+    # Check if we're running in Jupyter (ipykernel_launcher)
+    is_jupyter = any('ipykernel_launcher' in arg for arg in sys.argv)
     
-    args = parser.parse_args()
-    
-    try:
-        pipeline = OFACPipeline(data_dir=args.data_dir)
-        
-        if args.quick:
+    if is_jupyter:
+        # Running in Jupyter - use default parameters
+        print("Running in Jupyter environment with default parameters")
+        try:
+            pipeline = OFACPipeline(data_dir="data_list")
             results = pipeline.quick_update()
-        else:
-            results = pipeline.run(
-                list_type=args.list_type,
-                skip_download=args.skip_download,
-                skip_conversion=args.skip_conversion,
-                skip_import=args.skip_import
-            )
+            return 0 if results['status'] == 'SUCCESS' else 1
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+            return 1
+    else:
+        # Running as script - parse command line arguments
+        parser = argparse.ArgumentParser(description="OFAC Data Pipeline")
+        parser.add_argument(
+            "--list-type",
+            choices=["consolidated", "sdn"],
+            default="consolidated",
+            help="Type of list to process (default: consolidated)"
+        )
+        parser.add_argument(
+            "--data-dir",
+            default="data_list",
+            help="Directory for data files (default: data_list)"
+        )
+        parser.add_argument(
+            "--skip-download",
+            action="store_true",
+            help="Skip download step (use existing XML)"
+        )
+        parser.add_argument(
+            "--skip-conversion",
+            action="store_true",
+            help="Skip XML to CSV conversion (use existing CSV)"
+        )
+        parser.add_argument(
+            "--skip-import",
+            action="store_true",
+            help="Skip database import"
+        )
+        parser.add_argument(
+            "--quick",
+            action="store_true",
+            help="Quick update - skip download if file is recent"
+        )
         
-        return 0 if results['status'] == 'SUCCESS' else 1
+        args = parser.parse_args()
         
+        try:
+            pipeline = OFACPipeline(data_dir=args.data_dir)
+            
+            if args.quick:
+                results = pipeline.quick_update()
+            else:
+                results = pipeline.run(
+                    list_type=args.list_type,
+                    skip_download=args.skip_download,
+                    skip_conversion=args.skip_conversion,
+                    skip_import=args.skip_import
+                )
+            
+            return 0 if results['status'] == 'SUCCESS' else 1
+            
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+            return 1
+
+
+def run_pipeline():
+    """Convenience function to run pipeline in Jupyter without command line args"""
+    try:
+        pipeline = OFACPipeline(data_dir="data_list")
+        results = pipeline.quick_update()
+        print(f"Pipeline completed with status: {results['status']}")
+        return results
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
-        return 1
+        raise
 
 
 if __name__ == "__main__":
