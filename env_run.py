@@ -117,41 +117,23 @@ def main():
     
     print(f"📋 Project ID: {project_id}")
     
-    # Define applications to create
+    # Define application to create - single merged app
     applications = [
         {
-            "name": "SDN API",
-            "description": "SDN Screening API with AI-powered matching",
-            "script": "scripts/run_sdn_api.py",
+            "name": "SDN Screening Application",
+            "description": "Merged SDN Screening web interface with integrated API",
+            "script": "scripts/run_merged_app.py",
             "kernel": "python3",
             "cpu": 4,
             "memory": 8,
             "gpu": 0,
-            "subdomain": "sdn-api",
+            "subdomain": "sdn-app",
             "bypass_auth": True,
             "environment": {
-                "API_HOST": "0.0.0.0",
-                "API_PORT": "8000",
-                "USE_LLM": "true",
-                "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", "")
-            },
-            "runtime_id": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
-        },
-        {
-            "name": "SDN Web UI",
-            "description": "Web interface for SDN screening",
-            "script": "scripts/run_flask_ui.py", 
-            "kernel": "python3",
-            "cpu": 2,
-            "memory": 4,
-            "gpu": 0,
-            "subdomain": "sdn-ui",
-            "bypass_auth": True,
-            "environment": {
-                "FLASK_APP": "flask_ui.app.app",
                 "FLASK_ENV": "production",
                 "USE_LLM": "true",
-                "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", "")
+                "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
+                "CDSW_READONLY_PORT": "8090"
             },
             "runtime_id": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
         }

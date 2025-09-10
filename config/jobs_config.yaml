@@ -41,16 +41,18 @@ jobs:
     environment:
       DATA_DIR: "data_list"
     
-  create_applications:
-    name: Create CML Applications
-    script: env_run.py
+  run_sdn_application:
+    name: Run SDN Screening Application
+    script: scripts/run_merged_app.py
     kernel: python3
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
-    cpu: 2
-    memory: 4
-    timeout: 1800  # 30 minutes
+    cpu: 4
+    memory: 8
+    timeout: 0  # Run indefinitely
     parent_job_key: "download_ofac_list"
     arguments: ""
     environment:
       USE_LLM: "true"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      FLASK_ENV: "production"
+      CDSW_READONLY_PORT: "8090"
