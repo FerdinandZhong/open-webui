@@ -18,23 +18,31 @@ class CMLApplicationCreator:
     def __init__(self):
         """Initialize the application creator."""
         self.project_id = os.environ.get("CDSW_PROJECT_ID")
-        self.api_base = os.environ.get("CDSW_API_URL", "").rstrip('/')
+        api_url = os.environ.get("CDSW_API_URL", "").rstrip('/')
         
-        # Get API key from environment (should be set by deployment script)
-        self.api_key = os.environ.get("CML_API_KEY")
+        # Convert v1 to v2 API URL for applications
+        if "/api/v1" in api_url:
+            self.api_base = api_url.replace("/api/v1", "/api/v2")
+        else:
+            self.api_base = api_url
         
-        if not all([self.project_id, self.api_base, self.api_key]):
+        # Use CDSW authentication - running within CML should have access
+        self.api_key = os.environ.get("CDSW_API_KEY")
+        
+        if not all([self.project_id, self.api_base]):
             print("Missing required environment variables:")
             print(f"  CDSW_PROJECT_ID: {self.project_id}")
             print(f"  CDSW_API_URL: {self.api_base}")
-            print(f"  CML_API_KEY: {'Set' if self.api_key else 'Not set'}")
             sys.exit(1)
         
         self.headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
         }
+        
+        # Add authorization if API key is available
+        if self.api_key:
+            self.headers["Authorization"] = f"Bearer {self.api_key}"
         
         print(f"Project ID: {self.project_id}")
         print(f"API Base: {self.api_base}")
