@@ -26,16 +26,30 @@ class CMLApplicationCreator:
     def __init__(self):
         """Initialize the application creator."""
         self.project_id = os.environ.get("CDSW_PROJECT_ID")
+        cdsw_api_url = os.environ.get("CDSW_API_URL")
+        cdsw_api_key = os.environ.get("CDSW_API_KEY")
         
-        if not self.project_id:
-            print("Missing required environment variable:")
+        if not all([self.project_id, cdsw_api_url, cdsw_api_key]):
+            print("Missing required environment variables:")
             print(f"  CDSW_PROJECT_ID: {self.project_id}")
+            print(f"  CDSW_API_URL: {cdsw_api_url}")
+            print(f"  CDSW_API_KEY: {'Set' if cdsw_api_key else 'Not set'}")
             sys.exit(1)
         
-        # Initialize CML API client (handles authentication automatically)
+        # Configure CML API client with CDSW credentials
         try:
-            self.client = cmlapi.default_client()
+            configuration = cmlapi.Configuration(
+                host=cdsw_api_url,
+                api_key={'authorization': cdsw_api_key}
+            )
+            configuration.api_key_prefix['authorization'] = 'Bearer'
+            
+            # Create API client
+            api_client = cmlapi.ApiClient(configuration)
+            self.client = cmlapi.CMLServiceApi(api_client)
+            
             print(f"✅ CML API client initialized")
+            print(f"Host: {cdsw_api_url}")
             print(f"Project ID: {self.project_id}")
         except Exception as e:
             print(f"❌ Failed to initialize CML API client: {e}")
