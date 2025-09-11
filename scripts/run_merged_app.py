@@ -20,6 +20,8 @@ subprocess.run(['uv', 'sync'], check=True)
 # Pass through all environment variables including OPENAI_API_KEY
 env = os.environ.copy()
 env['SDN_FILE_PATH'] = '/home/cdsw/data_list/sdn_final.csv'
+env['MAX_SEARCH_RESULTS'] = '10'
+env['NAME_MATCH_THRESHOLD'] = '0.4'
 
 
 result = subprocess.run([venv_python, "run_merged_app.py"], env=env)
