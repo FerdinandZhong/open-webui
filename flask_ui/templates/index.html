@@ -196,12 +196,24 @@ function displayResults(data) {
         return;
     }
     
-    const resultsHTML = data.results.map(match => `
-        <div class="result-card ${getConfidenceClass(match.confidence)}">
+    const resultsHTML = data.results.map(match => {
+        // Validate confidence level against score for consistency
+        // If there's a mismatch, recalculate based on score
+        let displayConfidence = match.confidence;
+        const expectedConfidence = getConfidenceLevel(match.score);
+        
+        // Check for obvious mismatches (e.g., HIGH confidence with 0% score)
+        if ((match.confidence === 'HIGH' && match.score <= 0.3) ||
+            (match.confidence === 'LOW' && match.score > 0.8)) {
+            displayConfidence = expectedConfidence;
+        }
+        
+        return `
+        <div class="result-card ${getConfidenceClass(displayConfidence)}">
             <div class="result-header">
                 <h4 class="result-name">${escapeHtml(match.name)}</h4>
-                <span class="confidence-badge ${getConfidenceClass(match.confidence)}">
-                    ${match.confidence} (${(match.score * 100).toFixed(0)}%)
+                <span class="confidence-badge ${getConfidenceClass(displayConfidence)}">
+                    ${displayConfidence} (${(match.score * 100).toFixed(0)}%)
                 </span>
             </div>
             
@@ -231,7 +243,7 @@ function displayResults(data) {
                 </ul>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     resultsContainer.innerHTML = resultsHTML;
 }
@@ -239,6 +251,15 @@ function displayResults(data) {
 function getConfidenceClass(confidence) {
     const level = confidence.toLowerCase().replace('-', '_');
     return `confidence-${level}`;
+}
+
+function getConfidenceLevel(score) {
+    // Determine confidence level based on score if needed
+    if (score > 0.8) return 'HIGH';
+    if (score > 0.6) return 'MEDIUM-HIGH';
+    if (score > 0.5) return 'MEDIUM';
+    if (score > 0.3) return 'LOW-MEDIUM';
+    return 'LOW';
 }
 
 function formatKey(key) {
