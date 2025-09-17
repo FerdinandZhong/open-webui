@@ -6,7 +6,6 @@ import sys
 
 os.chdir("/home/cdsw")
 
-# Use the local .venv that has the packages installed
 venv_python = os.path.join('.venv', 'bin', 'python')
 
 # Check if venv exists
