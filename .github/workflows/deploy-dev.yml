@@ -1,0 +1,30 @@
+name: Deploy to CML (Dev)
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy-to-cml:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests pyyaml
+
+      - name: Deploy to Cloudera ML
+        env:
+          CML_HOST: ${{ secrets.CML_HOST_DEV }}
+          CML_API_KEY: ${{ secrets.CML_API_KEY_DEV }}
+          GH_PAT: ${{ secrets.GH_PAT }}  # GitHub Personal Access Token for repository cloning
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Fallback to automatic token if PAT not available
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # OpenAI API key for LLM features
+        run: |
+          python .github/scripts/deploy_to_cml.py
