@@ -20,12 +20,12 @@ The SDN Watchlist API uses a three-phase approach to identify potential matches:
   
 - **Context-Aware Ranking**:
   - Date of birth matching with fuzzy date support
-  - Nationality and citizenship verification
+  - Nationality and citizenship verification 
   - Address and location matching
   - Weighted scoring system
   
 - **Production-Ready**:
-  - RESTful API with FastAPI
+  - RESTful API with FastAPI, 
   - Async support for high performance
   - Comprehensive error handling
   - Health check endpoints
