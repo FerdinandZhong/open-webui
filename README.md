@@ -8,7 +8,7 @@ The SDN Watchlist API uses a three-phase approach to identify potential matches:
 
 1. **Name Matching Phase**: Employs  multiple strategies including exact matching, fuzzy matching, phonetic matching, and name variation handling to cast a wide net for potential matches
 2. **Context Ranking Phase**: Scores and ranks matches based on additional context like date of birth, nationality, and other identifying information
-3. **Explanation Generation Phase**: For high-confidence matches, generates detailed explanations using advanced AI models to assess the likelihood of a true match
+3. **Explanation Generation Phase**: For high-confidence matches, it generates detailed explanations using advanced AI models to assess the likelihood of a true match
 
 ## Features
 
