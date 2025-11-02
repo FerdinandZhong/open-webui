@@ -176,7 +176,7 @@ def main():
                 "MAX_SEARCH_RESULTS": "10",
                 "NAME_MATCH_THRESHOLD": "0.4"
             },
-            "runtime_id": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.01.3-b8"
+            "runtime_id": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
         }
     ]
     
