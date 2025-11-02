@@ -52,6 +52,9 @@ def create_or_update_application(project_id, app_config):
                 time.sleep(2)  # Wait for deletion to complete
             except Exception as e:
                 print(f"⚠️  Could not delete existing application: {e}")
+                print(f"💡 Please manually delete the application '{app_config['name']}' from CML UI and re-run this script")
+                print(f"   This usually happens when the app has an outdated runtime that no longer exists")
+                return None
         
         # Create application request
         app_body = cmlapi.CreateApplicationRequest()
