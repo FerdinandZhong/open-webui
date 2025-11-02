@@ -12,7 +12,7 @@ To enable automated deployment to Cloudera Machine Learning, configure the follo
 ### 2. CML_API_KEY
 - **Description**: Your personal CML API key for authentication
 - **How to obtain**:
-  1. Log into your CML workspace
+  1. Log into your CML wo rkspace 
   2. Go to User Settings → API Keys
   3. Click "Create API Key"
   4. Copy the generated key (save it securely, it won't be shown again)
