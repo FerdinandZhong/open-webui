@@ -1,268 +1,178 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="search-section">
-    <h2 class="section-title">Search SDN Watchlist</h2>
-    <p class="section-description">
-        Enter name, date of birth, nationality, or other identifying information to search the OFAC SDN list.
-    </p>
-    
-    <form id="search-form" class="search-form">
-        <div class="form-group">
-            <label for="query">Search Query</label>
-            <textarea 
-                id="query" 
-                name="query" 
-                class="form-control" 
-                rows="3" 
-                placeholder="Example: John Smith, 01/15/1980, USA"
+<!-- Compact Modern Search Section -->
+<div class="search-hero">
+    <div class="search-hero-content">
+        <div class="search-badges">
+            <span class="hero-badge traditional">📊 Traditional</span>
+            <span class="hero-badge-vs">vs</span>
+            <span class="hero-badge llm">🤖 AI-Powered</span>
+        </div>
+        <h1 class="search-hero-title">SDN Watchlist Screening</h1>
+        <p class="search-hero-subtitle">Compare rule-based feature extraction with GPT-4 powered analysis</p>
+    </div>
+
+    <form id="search-form" class="search-bar-container">
+        <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input
+                type="text"
+                id="query"
+                name="query"
+                class="search-input"
+                placeholder="Enter name, DOB, nationality... (e.g., John Smith, 01/15/1980, USA)"
                 required
-            ></textarea>
-        </div>
-        
-        <div class="form-group">
-            <label for="max_results">Maximum Results</label>
-            <input 
-                type="number" 
-                id="max_results" 
-                name="max_results" 
-                class="form-control" 
-                value="10" 
-                min="1" 
-                max="50"
+                autocomplete="off"
             >
+            <div class="search-options">
+                <label class="results-label" for="max_results">Max:</label>
+                <select id="max_results" name="max_results" class="results-select">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <button type="submit" class="search-submit" id="search-btn">
+                <span class="btn-text">Screen</span>
+                <span class="spinner" style="display: none;"></span>
+            </button>
         </div>
-        
-        <button type="submit" class="btn btn-primary" id="search-btn">
-            <span class="btn-text">Search</span>
-            <span class="spinner" style="display: none;"></span>
-        </button>
     </form>
-    
-    <!-- Progress Status Section -->
-    <div id="progress-section" class="progress-section" style="display: none;">
-        <h3>Search Progress</h3>
-        <div class="progress-steps">
-            <div class="progress-step" id="step-1">
-                <span class="step-number">1</span>
-                <span class="step-text">Generating name variations...</span>
-                <span class="step-status">⏳</span>
-            </div>
-            <div class="progress-step" id="step-2">
-                <span class="step-number">2</span>
-                <span class="step-text">Filtering potential matches...</span>
-                <span class="step-status">⏳</span>
-            </div>
-            <div class="progress-step" id="step-3">
-                <span class="step-number">3</span>
-                <span class="step-text">AI-powered ranking...</span>
-                <span class="step-status">⏳</span>
-            </div>
-            <div class="progress-step" id="step-4">
-                <span class="step-number">4</span>
-                <span class="step-text">Generating explanations...</span>
-                <span class="step-status">⏳</span>
-            </div>
+
+    <!-- Inline Progress -->
+    <div id="progress-section" class="progress-inline" style="display: none;">
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <div class="progress-status">
+            <span class="progress-icon">⏳</span>
+            <span class="progress-text" id="progress-text">Analyzing...</span>
         </div>
     </div>
 </div>
 
+<!-- Side-by-Side Results Section -->
 <div id="results-section" class="results-section" style="display: none;">
-    <h3 class="results-title">Search Results</h3>
-    
-    <!-- Processing Pipeline Visualization -->
-    <div id="step-summary" class="pipeline-container">
-        <div class="pipeline-header">
-            <h4>Search Pipeline</h4>
-            <div class="pipeline-actions">
-                <button class="btn-expand-all" onclick="expandAllSteps()">Expand All</button>
-                <button class="btn-collapse-all" onclick="collapseAllSteps()">Collapse All</button>
+    <div class="comparison-container">
+        <!-- LEFT SIDE: Traditional Method -->
+        <div class="method-panel traditional-panel">
+            <div class="method-header">
+                <div class="method-title">
+                    <span class="method-icon">📊</span>
+                    <h3>Traditional Feature-Based</h3>
+                </div>
+                <span class="method-badge traditional">Rule-Based</span>
+            </div>
+
+            <div class="method-description">
+                Uses 21 extracted features including Levenshtein distance, Jaro-Winkler similarity,
+                Soundex, n-gram matching, DOB/nationality matching, and more.
+            </div>
+
+            <!-- Feature Summary -->
+            <div class="feature-summary" id="traditional-summary">
+                <div class="summary-stat">
+                    <span class="stat-value" id="trad-total-features">21</span>
+                    <span class="stat-label">Features Analyzed</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-value" id="trad-matches">0</span>
+                    <span class="stat-label">Matches Found</span>
+                </div>
+            </div>
+
+            <!-- Traditional Results -->
+            <div class="method-results" id="traditional-results">
+                <p class="no-results">Run a search to see results</p>
             </div>
         </div>
 
-        <!-- Visual Timeline -->
-        <div class="pipeline-timeline">
-            <!-- Step 1: Name Generation -->
-            <div class="pipeline-step" id="step1-container">
-                <div class="step-indicator">
-                    <div class="step-node completed">
-                        <span class="step-icon">🤖</span>
-                    </div>
-                    <div class="step-connector"></div>
+        <!-- RIGHT SIDE: LLM Method -->
+        <div class="method-panel llm-panel">
+            <div class="method-header">
+                <div class="method-title">
+                    <span class="method-icon">🤖</span>
+                    <h3>AI-Powered (LLM)</h3>
                 </div>
-                <div class="step-card">
-                    <div class="step-card-header" onclick="toggleStepDetails('step1')">
-                        <div class="step-info">
-                            <span class="step-badge">Step 1</span>
-                            <h5>AI Name Generation</h5>
-                            <p class="step-summary" id="summary-step1">Generated name variations</p>
-                        </div>
-                        <div class="step-metrics" id="step1-metrics">
-                            <div class="metric">
-                                <span class="metric-value" id="step1-count">-</span>
-                                <span class="metric-label">Variations</span>
-                            </div>
-                        </div>
-                        <button class="btn-details" aria-expanded="false">
-                            <span class="btn-text">Details</span>
-                            <svg class="chevron" viewBox="0 0 24 24" width="20" height="20">
-                                <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
-                            </svg>
-                        </button>
+                <span class="method-badge llm">GPT-4 Enhanced</span>
+            </div>
+
+            <div class="method-description">
+                Uses GPT-4 for intelligent name variation generation, contextual analysis,
+                and nuanced confidence scoring with detailed explanations.
+            </div>
+
+            <!-- LLM Pipeline Summary -->
+            <div class="pipeline-summary" id="llm-summary">
+                <div class="summary-stat">
+                    <span class="stat-value" id="llm-variations">0</span>
+                    <span class="stat-label">Name Variations</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-value" id="llm-matches">0</span>
+                    <span class="stat-label">Matches Found</span>
+                </div>
+            </div>
+
+            <!-- LLM Pipeline Details (Collapsible) -->
+            <div class="pipeline-toggle">
+                <button class="btn-toggle-pipeline" onclick="toggleLLMPipeline()">
+                    <span>View Pipeline Details</span>
+                    <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="llm-pipeline-details" id="llm-pipeline-details" style="display: none;">
+                <!-- Step 1: Name Generation -->
+                <div class="pipeline-mini-step">
+                    <div class="mini-step-header" onclick="toggleMiniStep('llm-step1')">
+                        <span class="mini-step-icon">🤖</span>
+                        <span class="mini-step-title">Step 1: AI Name Generation</span>
+                        <span class="mini-step-count" id="llm-step1-count">0 variations</span>
                     </div>
-                    <div class="step-card-body" id="step1-details">
-                        <div class="details-section">
-                            <h6>Generated Name Variations</h6>
-                            <p class="details-hint">These variations help find potential matches with different spellings or formats:</p>
-                            <div class="variations-cloud" id="step1-variations">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
+                    <div class="mini-step-body" id="llm-step1-body">
+                        <div class="variations-cloud" id="llm-step1-variations"></div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Database Filtering -->
+                <div class="pipeline-mini-step">
+                    <div class="mini-step-header" onclick="toggleMiniStep('llm-step2')">
+                        <span class="mini-step-icon">🔍</span>
+                        <span class="mini-step-title">Step 2: Database Filtering</span>
+                        <span class="mini-step-count" id="llm-step2-count">0 matches</span>
+                    </div>
+                    <div class="mini-step-body" id="llm-step2-body">
+                        <div class="matches-list" id="llm-step2-matches"></div>
+                    </div>
+                </div>
+
+                <!-- Step 3: AI Ranking -->
+                <div class="pipeline-mini-step">
+                    <div class="mini-step-header" onclick="toggleMiniStep('llm-step3')">
+                        <span class="mini-step-icon">⚖️</span>
+                        <span class="mini-step-title">Step 3: AI Ranking</span>
+                        <span class="mini-step-count" id="llm-step3-count">0 ranked</span>
+                    </div>
+                    <div class="mini-step-body" id="llm-step3-body">
+                        <div class="ranking-cards" id="llm-step3-ranking"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Step 2: Database Filtering -->
-            <div class="pipeline-step" id="step2-container">
-                <div class="step-indicator">
-                    <div class="step-node completed">
-                        <span class="step-icon">🔍</span>
-                    </div>
-                    <div class="step-connector"></div>
-                </div>
-                <div class="step-card">
-                    <div class="step-card-header" onclick="toggleStepDetails('step2')">
-                        <div class="step-info">
-                            <span class="step-badge">Step 2</span>
-                            <h5>Database Filtering</h5>
-                            <p class="step-summary" id="summary-step2">Fuzzy matching against SDN list</p>
-                        </div>
-                        <div class="step-metrics" id="step2-metrics">
-                            <div class="metric">
-                                <span class="metric-value" id="step2-searched">-</span>
-                                <span class="metric-label">Searched</span>
-                            </div>
-                            <div class="metric highlight">
-                                <span class="metric-value" id="step2-found">-</span>
-                                <span class="metric-label">Found</span>
-                            </div>
-                        </div>
-                        <button class="btn-details" aria-expanded="false">
-                            <span class="btn-text">Details</span>
-                            <svg class="chevron" viewBox="0 0 24 24" width="20" height="20">
-                                <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="step-card-body" id="step2-details">
-                        <div class="details-section">
-                            <div class="filter-overview">
-                                <div class="overview-stat">
-                                    <div class="stat-icon">📊</div>
-                                    <div class="stat-info">
-                                        <span class="stat-number" id="step2-total">0</span>
-                                        <span class="stat-text">Total Entries</span>
-                                    </div>
-                                </div>
-                                <div class="overview-stat">
-                                    <div class="stat-icon">🎯</div>
-                                    <div class="stat-info">
-                                        <span class="stat-number" id="step2-threshold">70%</span>
-                                        <span class="stat-text">Match Threshold</span>
-                                    </div>
-                                </div>
-                                <div class="overview-stat success">
-                                    <div class="stat-icon">✅</div>
-                                    <div class="stat-info">
-                                        <span class="stat-number" id="step2-matches-count">0</span>
-                                        <span class="stat-text">Matches Found</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <h6>Initial Matches</h6>
-                            <div class="matches-list" id="step2-matches">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 3: AI Ranking -->
-            <div class="pipeline-step" id="step3-container">
-                <div class="step-indicator">
-                    <div class="step-node completed">
-                        <span class="step-icon">⚖️</span>
-                    </div>
-                    <div class="step-connector"></div>
-                </div>
-                <div class="step-card">
-                    <div class="step-card-header" onclick="toggleStepDetails('step3')">
-                        <div class="step-info">
-                            <span class="step-badge">Step 3</span>
-                            <h5>AI Ranking & Scoring</h5>
-                            <p class="step-summary" id="summary-step3">Context-aware confidence scoring</p>
-                        </div>
-                        <div class="step-metrics" id="step3-metrics">
-                            <div class="metric danger">
-                                <span class="metric-value" id="step3-high">0</span>
-                                <span class="metric-label">High</span>
-                            </div>
-                            <div class="metric warning">
-                                <span class="metric-value" id="step3-medium">0</span>
-                                <span class="metric-label">Medium</span>
-                            </div>
-                            <div class="metric success">
-                                <span class="metric-value" id="step3-low">0</span>
-                                <span class="metric-label">Low</span>
-                            </div>
-                        </div>
-                        <button class="btn-details" aria-expanded="false">
-                            <span class="btn-text">Details</span>
-                            <svg class="chevron" viewBox="0 0 24 24" width="20" height="20">
-                                <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="step-card-body" id="step3-details">
-                        <div class="details-section">
-                            <h6>Ranking Analysis</h6>
-                            <p class="details-hint">Each match is scored based on name similarity, DOB, nationality, and other contextual factors:</p>
-                            <div class="ranking-cards" id="step3-ranking">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 4: Explanation Generation -->
-            <div class="pipeline-step" id="step4-container">
-                <div class="step-indicator">
-                    <div class="step-node completed">
-                        <span class="step-icon">📝</span>
-                    </div>
-                </div>
-                <div class="step-card final">
-                    <div class="step-card-header">
-                        <div class="step-info">
-                            <span class="step-badge">Step 4</span>
-                            <h5>Explanation Generation</h5>
-                            <p class="step-summary" id="summary-step4">AI-powered match explanations</p>
-                        </div>
-                        <div class="step-metrics">
-                            <div class="metric">
-                                <span class="metric-value" id="step4-explanations">0</span>
-                                <span class="metric-label">Explanations</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- LLM Results -->
+            <div class="method-results" id="llm-results">
+                <p class="no-results">Run a search to see results</p>
             </div>
         </div>
     </div>
-    
-    <div id="results-container"></div>
 </div>
 
 <div id="error-section" class="error-section" style="display: none;">
@@ -272,8 +182,9 @@
 
 {% block scripts %}
 <script>
-// Store step details globally for expandable sections
-let currentStepDetails = null;
+// Store data globally
+let currentData = null;
+let progressInterval = null;
 
 document.getElementById('search-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -284,299 +195,298 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     const resultsSection = document.getElementById('results-section');
     const errorSection = document.getElementById('error-section');
     const progressSection = document.getElementById('progress-section');
-    const resultsContainer = document.getElementById('results-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
 
-    // Show loading state and progress
+    // Show loading state
     searchBtn.disabled = true;
     searchBtn.querySelector('.btn-text').style.display = 'none';
     searchBtn.querySelector('.spinner').style.display = 'inline-block';
     resultsSection.style.display = 'none';
     errorSection.style.display = 'none';
-    progressSection.style.display = 'block';
-    resetProgressSteps();
-    resetExpandableSections();
+    progressSection.style.display = 'flex';
 
-    // Start step indicators
-    const steps = [
-        { id: 'step-1', text: 'Generating AI-powered name variations...', delay: 500 },
-        { id: 'step-2', text: 'Filtering SDN entries...', delay: 2000 },
-        { id: 'step-3', text: 'AI ranking and confidence scoring...', delay: 4000 },
-        { id: 'step-4', text: 'Generating detailed explanations...', delay: 6000 }
+    // Animate progress bar
+    let progress = 0;
+    const messages = [
+        'Extracting features...',
+        'Running traditional analysis...',
+        'Generating AI name variations...',
+        'Analyzing with GPT-4...',
+        'Ranking matches...',
+        'Finalizing results...'
     ];
+    let msgIndex = 0;
 
-    // Simulate progress steps
-    steps.forEach((step, index) => {
-        setTimeout(() => {
-            updateStepStatus(step.id, 'in-progress', '🔄');
-            document.querySelector(`#${step.id} .step-text`).textContent = step.text;
-        }, step.delay);
-    });
+    progressBar.style.width = '0%';
+    progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+        if (progress > msgIndex * 15 && msgIndex < messages.length) {
+            progressText.textContent = messages[msgIndex];
+            msgIndex++;
+        }
+    }, 300);
 
     try {
         const response = await fetch('/search', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                query: query,
-                max_results: parseInt(maxResults)
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, max_results: parseInt(maxResults) })
         });
 
         const data = await response.json();
+        clearInterval(progressInterval);
 
         if (response.ok) {
-            // Store step details for expandable sections
-            currentStepDetails = data.step_details;
+            currentData = data;
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Complete!';
 
-            // Mark all steps as complete
-            completeAllSteps(data);
             setTimeout(() => {
-                displayResults(data);
-                populateStepDetails(data.step_details);
+                displayTraditionalResults(data.traditional);
+                displayLLMResults(data);
                 resultsSection.style.display = 'block';
                 progressSection.style.display = 'none';
-            }, 1000);
+            }, 300);
         } else {
-            markStepsAsError();
+            progressBar.style.background = 'var(--danger-color)';
+            progressText.textContent = 'Error occurred';
             showError(data.error || 'An error occurred');
         }
     } catch (error) {
-        markStepsAsError();
+        clearInterval(progressInterval);
+        progressBar.style.background = 'var(--danger-color)';
+        progressText.textContent = 'Connection failed';
         showError('Network error: Unable to connect to server');
     } finally {
-        // Reset button state
         searchBtn.disabled = false;
         searchBtn.querySelector('.btn-text').style.display = 'inline';
         searchBtn.querySelector('.spinner').style.display = 'none';
     }
 });
 
-// Toggle expandable step details
-function toggleStepDetails(stepId) {
-    const details = document.getElementById(`${stepId}-details`);
-    const card = document.getElementById(`${stepId}-container`);
-    const btn = card?.querySelector('.btn-details');
-
-    if (details.classList.contains('expanded')) {
-        details.classList.remove('expanded');
-        if (btn) btn.setAttribute('aria-expanded', 'false');
-    } else {
-        details.classList.add('expanded');
-        if (btn) btn.setAttribute('aria-expanded', 'true');
+// Display Traditional Method Results
+function displayTraditionalResults(traditional) {
+    if (!traditional) {
+        document.getElementById('traditional-results').innerHTML = '<p class="no-results">Traditional method not available</p>';
+        return;
     }
+
+    // Update summary stats
+    document.getElementById('trad-matches').textContent = traditional.total_matches || 0;
+    document.getElementById('trad-total-features').textContent = traditional.step_details?.total_features || 21;
+
+    const container = document.getElementById('traditional-results');
+
+    if (!traditional.results || traditional.results.length === 0) {
+        container.innerHTML = '<p class="no-results">No matches found</p>';
+        return;
+    }
+
+    container.innerHTML = traditional.results.map(match => `
+        <div class="result-card traditional-result ${getConfidenceClass(match.confidence)}">
+            <div class="result-header">
+                <h4 class="result-name">${escapeHtml(match.name)}</h4>
+                <span class="confidence-badge ${getConfidenceClass(match.confidence)}">
+                    ${match.confidence} (${(match.score * 100).toFixed(0)}%)
+                </span>
+            </div>
+
+            <div class="result-meta">
+                <span class="meta-item"><strong>Type:</strong> ${match.type}</span>
+                <span class="meta-item"><strong>Features Matched:</strong> ${match.feature_count}/21</span>
+            </div>
+
+            <!-- Feature Breakdown -->
+            <div class="feature-breakdown">
+                <div class="feature-breakdown-header" onclick="toggleFeatures(this)">
+                    <span>📊 Feature Analysis</span>
+                    <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </div>
+                <div class="feature-breakdown-body" style="display: none;">
+                    <div class="feature-grid">
+                        ${Object.entries(match.features || {}).map(([key, value]) => `
+                            <div class="feature-item ${value > 0.5 ? 'high' : value > 0.2 ? 'medium' : 'low'}">
+                                <span class="feature-name">${formatFeatureName(key)}</span>
+                                <span class="feature-value">${(value * 100).toFixed(0)}%</span>
+                                <div class="feature-bar">
+                                    <div class="feature-bar-fill" style="width: ${value * 100}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+
+            ${match.details.dob ? `<p class="detail-item"><strong>DOB:</strong> ${match.details.dob}</p>` : ''}
+            ${match.details.nationality ? `<p class="detail-item"><strong>Nationality:</strong> ${match.details.nationality}</p>` : ''}
+        </div>
+    `).join('');
 }
 
-// Expand all steps
-function expandAllSteps() {
-    ['step1', 'step2', 'step3'].forEach(stepId => {
-        const details = document.getElementById(`${stepId}-details`);
-        const card = document.getElementById(`${stepId}-container`);
-        const btn = card?.querySelector('.btn-details');
-        if (details) details.classList.add('expanded');
-        if (btn) btn.setAttribute('aria-expanded', 'true');
-    });
+// Display LLM Method Results
+function displayLLMResults(data) {
+    // Update summary stats
+    const stepDetails = data.step_details || {};
+    document.getElementById('llm-variations').textContent = stepDetails.step1_name_generation?.variation_count || 0;
+    document.getElementById('llm-matches').textContent = data.total_matches || 0;
+
+    // Populate pipeline details
+    populateLLMPipeline(stepDetails);
+
+    const container = document.getElementById('llm-results');
+
+    if (!data.results || data.results.length === 0) {
+        container.innerHTML = '<p class="no-results">No matches found</p>';
+        return;
+    }
+
+    container.innerHTML = data.results.map(match => `
+        <div class="result-card llm-result ${getConfidenceClass(match.confidence)}">
+            <div class="result-header">
+                <h4 class="result-name">${escapeHtml(match.name)}</h4>
+                <span class="confidence-badge ${getConfidenceClass(match.confidence)}">
+                    ${match.confidence} (${(match.llm_score * 100).toFixed(0)}%)
+                </span>
+            </div>
+
+            <div class="result-meta">
+                <span class="meta-item"><strong>Type:</strong> ${match.type}</span>
+                <span class="meta-item"><strong>Name Match:</strong> ${(match.name_match_score * 100).toFixed(0)}%</span>
+            </div>
+
+            ${match.explanation ? `
+                <div class="llm-explanation">
+                    <div class="explanation-header" onclick="toggleExplanation(this)">
+                        <span>🤖 AI Analysis</span>
+                        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                    </div>
+                    <div class="explanation-body" style="display: none;">
+                        <pre>${escapeHtml(match.explanation)}</pre>
+                    </div>
+                </div>
+            ` : ''}
+
+            <div class="match-reasons">
+                ${(match.match_reasons || []).map(reason =>
+                    `<span class="reason-tag">${escapeHtml(reason)}</span>`
+                ).join('')}
+            </div>
+
+            ${match.details.dob ? `<p class="detail-item"><strong>DOB:</strong> ${match.details.dob}</p>` : ''}
+            ${match.details.nationality ? `<p class="detail-item"><strong>Nationality:</strong> ${match.details.nationality}</p>` : ''}
+        </div>
+    `).join('');
 }
 
-// Collapse all steps
-function collapseAllSteps() {
-    ['step1', 'step2', 'step3'].forEach(stepId => {
-        const details = document.getElementById(`${stepId}-details`);
-        const card = document.getElementById(`${stepId}-container`);
-        const btn = card?.querySelector('.btn-details');
-        if (details) details.classList.remove('expanded');
-        if (btn) btn.setAttribute('aria-expanded', 'false');
-    });
-}
-
-// Reset expandable sections
-function resetExpandableSections() {
-    collapseAllSteps();
-}
-
-// Populate step details from API response
-function populateStepDetails(stepDetails) {
-    if (!stepDetails) return;
-
-    // Step 1: Name variations
+// Populate LLM Pipeline Details
+function populateLLMPipeline(stepDetails) {
+    // Step 1: Variations
     const step1 = stepDetails.step1_name_generation;
     if (step1) {
-        // Update metric
-        document.getElementById('step1-count').textContent = step1.variation_count || 0;
-
-        const variationsContainer = document.getElementById('step1-variations');
+        document.getElementById('llm-step1-count').textContent = `${step1.variation_count || 0} variations`;
+        const varContainer = document.getElementById('llm-step1-variations');
         if (step1.variations && step1.variations.length > 0) {
-            variationsContainer.innerHTML = step1.variations.map(v =>
+            varContainer.innerHTML = step1.variations.map(v =>
                 `<span class="variation-chip">${escapeHtml(v)}</span>`
             ).join('');
-        } else {
-            variationsContainer.innerHTML = '<p class="no-data">No variations generated</p>';
         }
     }
 
-    // Step 2: Database filtering
+    // Step 2: Filtering
     const step2 = stepDetails.step2_database_filtering;
     if (step2) {
-        // Update metrics
-        document.getElementById('step2-searched').textContent = formatNumber(step2.total_entries_searched || 0);
-        document.getElementById('step2-found').textContent = step2.matches_found || 0;
-
-        // Update overview stats
-        document.getElementById('step2-total').textContent = formatNumber(step2.total_entries_searched || 0);
-        document.getElementById('step2-threshold').textContent = `${(step2.threshold * 100).toFixed(0)}%`;
-        document.getElementById('step2-matches-count').textContent = step2.matches_found || 0;
-
-        const matchesContainer = document.getElementById('step2-matches');
+        document.getElementById('llm-step2-count').textContent = `${step2.matches_found || 0} matches`;
+        const matchContainer = document.getElementById('llm-step2-matches');
         if (step2.matches && step2.matches.length > 0) {
-            matchesContainer.innerHTML = step2.matches.map(m => `
+            matchContainer.innerHTML = step2.matches.map(m => `
                 <div class="match-item">
-                    <div class="match-item-info">
-                        <span class="match-item-name">${escapeHtml(m.name)}</span>
-                        <span class="match-item-type">${escapeHtml(m.type)}</span>
-                    </div>
+                    <span class="match-item-name">${escapeHtml(m.name)}</span>
                     <span class="match-item-score">${(m.score * 100).toFixed(1)}%</span>
                 </div>
             `).join('');
-        } else {
-            matchesContainer.innerHTML = '<p class="no-data">No matches found above threshold</p>';
         }
     }
 
-    // Step 3: AI Ranking
+    // Step 3: Ranking
     const step3 = stepDetails.step3_ai_ranking;
     if (step3 && step3.ranking_details) {
-        // Update metrics
-        const highCount = step3.ranking_details.filter(r => r.confidence === 'HIGH').length;
-        const medCount = step3.ranking_details.filter(r => ['MEDIUM', 'MEDIUM-HIGH'].includes(r.confidence)).length;
-        const lowCount = step3.ranking_details.filter(r => ['LOW', 'LOW-MEDIUM'].includes(r.confidence)).length;
-
-        document.getElementById('step3-high').textContent = highCount;
-        document.getElementById('step3-medium').textContent = medCount;
-        document.getElementById('step3-low').textContent = lowCount;
-
-        const rankingContainer = document.getElementById('step3-ranking');
+        document.getElementById('llm-step3-count').textContent = `${step3.ranking_details.length} ranked`;
+        const rankContainer = document.getElementById('llm-step3-ranking');
         if (step3.ranking_details.length > 0) {
-            rankingContainer.innerHTML = step3.ranking_details.map(r => `
-                <div class="ranking-card">
-                    <div class="ranking-card-header">
-                        <span class="ranking-card-name">${escapeHtml(r.name)}</span>
-                        <span class="ranking-card-confidence ${getConfidenceClass(r.confidence).replace('confidence-', '')}">${r.confidence}</span>
-                    </div>
-                    <div class="ranking-card-body">
-                        <div class="ranking-scores">
-                            <div class="ranking-score">
-                                <span class="ranking-score-label">Name Match</span>
-                                <span class="ranking-score-value">${(r.name_match_score * 100).toFixed(1)}%</span>
-                            </div>
-                            <div class="ranking-score">
-                                <span class="ranking-score-label">Final Score</span>
-                                <span class="ranking-score-value final">${(r.final_score * 100).toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        <div class="ranking-factors">
-                            ${r.match_reasons.map(reason =>
-                                `<span class="factor-tag">${escapeHtml(reason)}</span>`
-                            ).join('')}
-                        </div>
-                    </div>
+            rankContainer.innerHTML = step3.ranking_details.map(r => `
+                <div class="ranking-card mini">
+                    <span class="ranking-name">${escapeHtml(r.name)}</span>
+                    <span class="ranking-score">${(r.final_score * 100).toFixed(0)}%</span>
+                    <span class="ranking-confidence ${getConfidenceClass(r.confidence)}">${r.confidence}</span>
                 </div>
             `).join('');
-        } else {
-            rankingContainer.innerHTML = '<p class="no-data">No ranking data available</p>';
         }
     }
 }
 
-// Format large numbers
-function formatNumber(num) {
-    if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
+// Toggle functions
+function toggleLLMPipeline() {
+    const details = document.getElementById('llm-pipeline-details');
+    const btn = document.querySelector('.btn-toggle-pipeline');
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        btn.classList.add('expanded');
+    } else {
+        details.style.display = 'none';
+        btn.classList.remove('expanded');
     }
-    return num.toString();
 }
 
-function displayResults(data) {
-    const resultsContainer = document.getElementById('results-container');
-    
-    if (!data.results || data.results.length === 0) {
-        resultsContainer.innerHTML = '<p class="no-results">No matches found</p>';
-        return;
-    }
-    
-    const resultsHTML = data.results.map(match => {
-        // Validate confidence level against score for consistency
-        // If there's a mismatch, recalculate based on score
-        let displayConfidence = match.confidence;
-        const expectedConfidence = getConfidenceLevel(match.score);
-        
-        // Check for obvious mismatches (e.g., HIGH confidence with 0% score)
-        if ((match.confidence === 'HIGH' && match.score <= 0.3) ||
-            (match.confidence === 'LOW' && match.score > 0.8)) {
-            displayConfidence = expectedConfidence;
-        }
-        
-        return `
-        <div class="result-card ${getConfidenceClass(displayConfidence)}">
-            <div class="result-header">
-                <h4 class="result-name">${escapeHtml(match.name)}</h4>
-                <span class="confidence-badge ${getConfidenceClass(displayConfidence)}">
-                    ${displayConfidence} (${(match.score * 100).toFixed(0)}%)
-                </span>
-            </div>
-            
-            <div class="result-details">
-                <p><strong>Type:</strong> ${match.type}</p>
-                ${match.details.dob ? `<p><strong>Date of Birth:</strong> ${match.details.dob}</p>` : ''}
-                ${match.details.nationality ? `<p><strong>Nationality:</strong> ${match.details.nationality}</p>` : ''}
-                ${match.details.program ? `<p><strong>Programs:</strong> ${match.details.program}</p>` : ''}
-                <p><strong>UID:</strong> ${match.details.id}</p>
-            </div>
-            
-            ${match.explanation ? `
-                <div class="result-explanation">
-                    <h5>Analysis</h5>
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: inherit; max-height: 400px; overflow-y: auto;">${escapeHtml(match.explanation)}</pre>
-                </div>
-            ` : ''}
-            
-            <div class="match-details">
-                <h5>Match Details</h5>
-                <ul>
-                    <li><strong>Name Match Score:</strong> ${(match.name_match_score * 100).toFixed(1)}%</li>
-                    <li><strong>Overall Score:</strong> ${(match.score * 100).toFixed(1)}%</li>
-                    ${match.match_reasons ? match.match_reasons.map(reason => 
-                        `<li>${escapeHtml(reason)}</li>`
-                    ).join('') : ''}
-                </ul>
-            </div>
-        </div>
-    `}).join('');
-    
-    resultsContainer.innerHTML = resultsHTML;
+function toggleMiniStep(stepId) {
+    const body = document.getElementById(`${stepId}-body`);
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
 }
 
+function toggleFeatures(element) {
+    const body = element.nextElementSibling;
+    const chevron = element.querySelector('.chevron');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        body.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
+function toggleExplanation(element) {
+    const body = element.nextElementSibling;
+    const chevron = element.querySelector('.chevron');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        body.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Utility functions
 function getConfidenceClass(confidence) {
-    const level = confidence.toLowerCase().replace('-', '_');
+    const level = (confidence || 'low').toLowerCase().replace('-', '_');
     return `confidence-${level}`;
 }
 
-function getConfidenceLevel(score) {
-    // Determine confidence level based on score if needed
-    if (score > 0.8) return 'HIGH';
-    if (score > 0.6) return 'MEDIUM-HIGH';
-    if (score > 0.5) return 'MEDIUM';
-    if (score > 0.3) return 'LOW-MEDIUM';
-    return 'LOW';
-}
-
-function formatKey(key) {
-    return key.split('_').map(word => 
+function formatFeatureName(key) {
+    return key.split('_').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
@@ -588,74 +498,6 @@ function showError(message) {
     errorMessage.textContent = message;
     errorSection.style.display = 'block';
     document.getElementById('progress-section').style.display = 'none';
-}
-
-function resetProgressSteps() {
-    const steps = ['step-1', 'step-2', 'step-3', 'step-4'];
-    steps.forEach(stepId => {
-        updateStepStatus(stepId, 'pending', '⏳');
-    });
-}
-
-function updateStepStatus(stepId, status, icon) {
-    const step = document.getElementById(stepId);
-    const statusSpan = step.querySelector('.step-status');
-    step.className = `progress-step ${status}`;
-    statusSpan.textContent = icon;
-}
-
-function completeAllSteps(data) {
-    // Step 1: Name variations
-    updateStepStatus('step-1', 'completed', '✅');
-    document.querySelector('#step-1 .step-text').textContent = 'Generated AI name variations';
-    
-    // Step 2: Filtering
-    updateStepStatus('step-2', 'completed', '✅');
-    document.querySelector('#step-2 .step-text').textContent = `Filtered 17,991 entries`;
-    
-    // Step 3: Ranking
-    updateStepStatus('step-3', 'completed', '✅');
-    document.querySelector('#step-3 .step-text').textContent = `AI ranking completed - ${data.total_matches} matches found`;
-    
-    // Step 4: Explanations
-    updateStepStatus('step-4', 'completed', '✅');
-    const highConfidenceMatches = data.results ? data.results.filter(r => r.confidence === 'HIGH').length : 0;
-    document.querySelector('#step-4 .step-text').textContent = `Generated ${highConfidenceMatches} detailed explanations`;
-    
-    // Update summary with actual results
-    updateSummarySteps(data);
-}
-
-function updateSummarySteps(data) {
-    const stepDetails = data.step_details || {};
-
-    // Step 1 Summary
-    const step1 = stepDetails.step1_name_generation || {};
-    const variationCount = step1.variation_count || 0;
-    document.getElementById('summary-step1').textContent = `Generated ${variationCount} variations for "${data.query}"`;
-
-    // Step 2 Summary
-    const step2 = stepDetails.step2_database_filtering || {};
-    const matchesFound = step2.matches_found || 0;
-    document.getElementById('summary-step2').textContent = `Found ${matchesFound} potential matches`;
-
-    // Step 3 Summary
-    document.getElementById('summary-step3').textContent = `Analyzed ${data.total_matches || 0} matches with AI`;
-
-    // Step 4 Summary
-    const withExplanations = data.results ? data.results.filter(r => r.explanation && r.explanation.length > 0).length : 0;
-    document.getElementById('summary-step4').textContent = `${withExplanations} detailed explanations generated`;
-    document.getElementById('step4-explanations').textContent = withExplanations;
-}
-
-function markStepsAsError() {
-    const steps = ['step-1', 'step-2', 'step-3', 'step-4'];
-    steps.forEach(stepId => {
-        const step = document.getElementById(stepId);
-        if (!step.classList.contains('completed')) {
-            updateStepStatus(stepId, 'error', '❌');
-        }
-    });
 }
 </script>
 {% endblock %}

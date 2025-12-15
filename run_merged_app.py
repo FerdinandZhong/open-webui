@@ -11,6 +11,7 @@ import traceback
 from dotenv import load_dotenv
 
 from sdn_api.core.search_service import SDNSearchService
+from sdn_api.core.traditional_matcher import TraditionalMatcher
 from sdn_api.config import settings
 from sdn_api.utils.logger import setup_logger
 
@@ -23,16 +24,21 @@ logger = setup_logger(__name__)
 # Initialize search service directly
 SDN_FILE_PATH = "/home/cdsw/data_list/sdn_final.csv"
 
+search_service = None
+traditional_matcher = None
+
 try:
     search_service = SDNSearchService(SDN_FILE_PATH, use_llm=settings.use_llm)
     logger.info(f"Initialized SDN Search Service with LLM: {settings.use_llm}")
     logger.info(f"SDN file path: {SDN_FILE_PATH}")
+
+    # Initialize traditional matcher with the same entries
+    traditional_matcher = TraditionalMatcher(threshold=0.3)
+    logger.info("Initialized Traditional Matcher")
 except FileNotFoundError:
     logger.error(f"SDN file not found at {SDN_FILE_PATH}")
-    search_service = None
 except Exception as e:
     logger.error(f"Error loading SDN file: {e}")
-    search_service = None
 
 @app.route('/')
 def index():
@@ -48,28 +54,65 @@ def search():
         query = data.get('query', '')
         max_results = data.get('max_results', 10)
 
-        # search() now returns dict with 'results' and 'step_details'
+        # === LLM-BASED METHOD (Right side) ===
         search_result = search_service.search(query, max_results)
-        results = search_result['results']
-        step_details = search_result['step_details']
+        llm_results = search_result['results']
+        llm_step_details = search_result['step_details']
 
-        # Convert results to dicts, handling Pydantic v2
-        results_dicts = []
-        for result in results:
+        # Convert LLM results to dicts
+        llm_results_dicts = []
+        for result in llm_results:
             if hasattr(result, 'model_dump'):
-                # Use mode='json' for Pydantic v2 to ensure JSON-serializable output
-                results_dicts.append(result.model_dump(mode='json'))
+                llm_results_dicts.append(result.model_dump(mode='json'))
             elif hasattr(result, 'dict'):
-                results_dicts.append(result.dict())
+                llm_results_dicts.append(result.dict())
             else:
                 logger.error(f"Result is not a Pydantic model: {type(result)}")
                 continue
 
+        # === TRADITIONAL METHOD (Left side) ===
+        traditional_result = {'results': [], 'step_details': {}}
+        if traditional_matcher:
+            traditional_result = traditional_matcher.screen(
+                query,
+                search_service.entries,
+                max_results
+            )
+            # Convert traditional results to serializable format
+            traditional_results_dicts = []
+            for r in traditional_result['results']:
+                traditional_results_dicts.append({
+                    'name': r['entry'].name,
+                    'type': r['entry'].type,
+                    'score': round(r['score'], 3),
+                    'confidence': r['confidence'],
+                    'feature_count': r['feature_count'],
+                    'matched_features': r['matched_features'],
+                    'features': {k: round(v, 3) for k, v in r['features'].items()},
+                    'details': {
+                        'id': r['entry'].id,
+                        'program': r['entry'].program,
+                        'nationality': r['entry'].nationality,
+                        'dob': r['entry'].dob,
+                        'pob': r['entry'].pob,
+                        'aliases': r['entry'].aliases,
+                        'remarks': r['entry'].remarks
+                    }
+                })
+            traditional_result['results'] = traditional_results_dicts
+
         return jsonify({
             "query": query,
-            "total_matches": len(results_dicts),
-            "results": results_dicts,
-            "step_details": step_details
+            # LLM method results (existing - right side)
+            "total_matches": len(llm_results_dicts),
+            "results": llm_results_dicts,
+            "step_details": llm_step_details,
+            # Traditional method results (new - left side)
+            "traditional": {
+                "total_matches": len(traditional_result['results']),
+                "results": traditional_result['results'],
+                "step_details": traditional_result['step_details']
+            }
         })
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
