@@ -1,58 +1,57 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="search-section">
-    <h2 class="section-title">Search SDN Watchlist</h2>
-    <p class="section-description">
-        Compare Traditional Feature-Based screening (left) vs AI-Powered screening (right).
-    </p>
+<!-- Compact Modern Search Section -->
+<div class="search-hero">
+    <div class="search-hero-content">
+        <div class="search-badges">
+            <span class="hero-badge traditional">📊 Traditional</span>
+            <span class="hero-badge-vs">vs</span>
+            <span class="hero-badge llm">🤖 AI-Powered</span>
+        </div>
+        <h1 class="search-hero-title">SDN Watchlist Screening</h1>
+        <p class="search-hero-subtitle">Compare rule-based feature extraction with GPT-4 powered analysis</p>
+    </div>
 
-    <form id="search-form" class="search-form">
-        <div class="form-group">
-            <label for="query">Search Query</label>
-            <textarea
+    <form id="search-form" class="search-bar-container">
+        <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input
+                type="text"
                 id="query"
                 name="query"
-                class="form-control"
-                rows="3"
-                placeholder="Example: John Smith, 01/15/1980, USA"
+                class="search-input"
+                placeholder="Enter name, DOB, nationality... (e.g., John Smith, 01/15/1980, USA)"
                 required
-            ></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="max_results">Maximum Results</label>
-            <input
-                type="number"
-                id="max_results"
-                name="max_results"
-                class="form-control"
-                value="10"
-                min="1"
-                max="50"
+                autocomplete="off"
             >
+            <div class="search-options">
+                <label class="results-label" for="max_results">Max:</label>
+                <select id="max_results" name="max_results" class="results-select">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <button type="submit" class="search-submit" id="search-btn">
+                <span class="btn-text">Screen</span>
+                <span class="spinner" style="display: none;"></span>
+            </button>
         </div>
-
-        <button type="submit" class="btn btn-primary" id="search-btn">
-            <span class="btn-text">Search Both Methods</span>
-            <span class="spinner" style="display: none;"></span>
-        </button>
     </form>
 
-    <!-- Progress Status Section -->
-    <div id="progress-section" class="progress-section" style="display: none;">
-        <h3>Search Progress</h3>
-        <div class="progress-steps">
-            <div class="progress-step" id="step-1">
-                <span class="step-number">1</span>
-                <span class="step-text">Running Traditional Feature Extraction...</span>
-                <span class="step-status">⏳</span>
-            </div>
-            <div class="progress-step" id="step-2">
-                <span class="step-number">2</span>
-                <span class="step-text">Running AI-Powered Analysis...</span>
-                <span class="step-status">⏳</span>
-            </div>
+    <!-- Inline Progress -->
+    <div id="progress-section" class="progress-inline" style="display: none;">
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <div class="progress-status">
+            <span class="progress-icon">⏳</span>
+            <span class="progress-text" id="progress-text">Analyzing...</span>
         </div>
     </div>
 </div>
@@ -185,6 +184,7 @@
 <script>
 // Store data globally
 let currentData = null;
+let progressInterval = null;
 
 document.getElementById('search-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -195,6 +195,8 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     const resultsSection = document.getElementById('results-section');
     const errorSection = document.getElementById('error-section');
     const progressSection = document.getElementById('progress-section');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
 
     // Show loading state
     searchBtn.disabled = true;
@@ -202,12 +204,30 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     searchBtn.querySelector('.spinner').style.display = 'inline-block';
     resultsSection.style.display = 'none';
     errorSection.style.display = 'none';
-    progressSection.style.display = 'block';
-    resetProgressSteps();
+    progressSection.style.display = 'flex';
 
-    // Simulate progress
-    setTimeout(() => updateStepStatus('step-1', 'in-progress', '🔄'), 100);
-    setTimeout(() => updateStepStatus('step-2', 'in-progress', '🔄'), 500);
+    // Animate progress bar
+    let progress = 0;
+    const messages = [
+        'Extracting features...',
+        'Running traditional analysis...',
+        'Generating AI name variations...',
+        'Analyzing with GPT-4...',
+        'Ranking matches...',
+        'Finalizing results...'
+    ];
+    let msgIndex = 0;
+
+    progressBar.style.width = '0%';
+    progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+        if (progress > msgIndex * 15 && msgIndex < messages.length) {
+            progressText.textContent = messages[msgIndex];
+            msgIndex++;
+        }
+    }, 300);
 
     try {
         const response = await fetch('/search', {
@@ -217,26 +237,28 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
         });
 
         const data = await response.json();
+        clearInterval(progressInterval);
 
         if (response.ok) {
             currentData = data;
-            updateStepStatus('step-1', 'completed', '✅');
-            updateStepStatus('step-2', 'completed', '✅');
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Complete!';
 
             setTimeout(() => {
                 displayTraditionalResults(data.traditional);
                 displayLLMResults(data);
                 resultsSection.style.display = 'block';
                 progressSection.style.display = 'none';
-            }, 500);
+            }, 300);
         } else {
-            updateStepStatus('step-1', 'error', '❌');
-            updateStepStatus('step-2', 'error', '❌');
+            progressBar.style.background = 'var(--danger-color)';
+            progressText.textContent = 'Error occurred';
             showError(data.error || 'An error occurred');
         }
     } catch (error) {
-        updateStepStatus('step-1', 'error', '❌');
-        updateStepStatus('step-2', 'error', '❌');
+        clearInterval(progressInterval);
+        progressBar.style.background = 'var(--danger-color)';
+        progressText.textContent = 'Connection failed';
         showError('Network error: Unable to connect to server');
     } finally {
         searchBtn.disabled = false;
@@ -476,19 +498,6 @@ function showError(message) {
     errorMessage.textContent = message;
     errorSection.style.display = 'block';
     document.getElementById('progress-section').style.display = 'none';
-}
-
-function resetProgressSteps() {
-    updateStepStatus('step-1', 'pending', '⏳');
-    updateStepStatus('step-2', 'pending', '⏳');
-}
-
-function updateStepStatus(stepId, status, icon) {
-    const step = document.getElementById(stepId);
-    if (!step) return;
-    const statusSpan = step.querySelector('.step-status');
-    step.className = `progress-step ${status}`;
-    statusSpan.textContent = icon;
 }
 </script>
 {% endblock %}
