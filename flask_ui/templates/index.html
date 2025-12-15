@@ -70,36 +70,84 @@
 <div id="results-section" class="results-section" style="display: none;">
     <h3 class="results-title">Search Results</h3>
     
-    <!-- Step Summary Section -->
+    <!-- Step Summary Section with Expandable Details -->
     <div id="step-summary" class="step-summary">
         <h4>Processing Summary</h4>
         <div class="summary-steps">
-            <div class="summary-step">
-                <span class="summary-icon">🤖</span>
-                <div class="summary-content">
-                    <strong>Step 1: AI Name Generation</strong>
-                    <p id="summary-step1">Generated AI-powered name variations</p>
+            <!-- Step 1: Name Generation -->
+            <div class="summary-step expandable" id="step1-container">
+                <div class="step-header" onclick="toggleStepDetails('step1')">
+                    <span class="summary-icon">🤖</span>
+                    <div class="summary-content">
+                        <strong>Step 1: AI Name Generation</strong>
+                        <p id="summary-step1">Generated AI-powered name variations</p>
+                    </div>
+                    <span class="expand-icon" id="step1-expand-icon">▼</span>
+                </div>
+                <div class="step-details" id="step1-details" style="display: none;">
+                    <div class="details-content">
+                        <h5>Generated Name Variations</h5>
+                        <p class="details-description">These variations are used to find potential matches in the database:</p>
+                        <div class="name-variations-list" id="step1-variations">
+                            <!-- Name variations will be populated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="summary-step">
-                <span class="summary-icon">🔍</span>
-                <div class="summary-content">
-                    <strong>Step 2: Database Filtering</strong>
-                    <p id="summary-step2">Searched through 17,991 SDN entries</p>
+
+            <!-- Step 2: Database Filtering -->
+            <div class="summary-step expandable" id="step2-container">
+                <div class="step-header" onclick="toggleStepDetails('step2')">
+                    <span class="summary-icon">🔍</span>
+                    <div class="summary-content">
+                        <strong>Step 2: Database Filtering</strong>
+                        <p id="summary-step2">Searched through SDN entries</p>
+                    </div>
+                    <span class="expand-icon" id="step2-expand-icon">▼</span>
+                </div>
+                <div class="step-details" id="step2-details" style="display: none;">
+                    <div class="details-content">
+                        <h5>Filtering Results</h5>
+                        <div class="filter-stats" id="step2-stats">
+                            <!-- Filter stats will be populated here -->
+                        </div>
+                        <h5>Initial Matches (Before AI Ranking)</h5>
+                        <div class="filter-matches-table" id="step2-matches">
+                            <!-- Matches table will be populated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="summary-step">
-                <span class="summary-icon">⚖️</span>
-                <div class="summary-content">
-                    <strong>Step 3: AI Ranking & Scoring</strong>
-                    <p id="summary-step3">Applied AI-powered confidence scoring</p>
+
+            <!-- Step 3: AI Ranking -->
+            <div class="summary-step expandable" id="step3-container">
+                <div class="step-header" onclick="toggleStepDetails('step3')">
+                    <span class="summary-icon">⚖️</span>
+                    <div class="summary-content">
+                        <strong>Step 3: AI Ranking & Scoring</strong>
+                        <p id="summary-step3">Applied AI-powered confidence scoring</p>
+                    </div>
+                    <span class="expand-icon" id="step3-expand-icon">▼</span>
+                </div>
+                <div class="step-details" id="step3-details" style="display: none;">
+                    <div class="details-content">
+                        <h5>AI Ranking Details</h5>
+                        <p class="details-description">Each match is analyzed using contextual factors (DOB, nationality, etc.):</p>
+                        <div class="ranking-table" id="step3-ranking">
+                            <!-- Ranking details will be populated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="summary-step">
-                <span class="summary-icon">📝</span>
-                <div class="summary-content">
-                    <strong>Step 4: Explanation Generation</strong>
-                    <p id="summary-step4">Generated detailed match explanations</p>
+
+            <!-- Step 4: Explanation Generation -->
+            <div class="summary-step" id="step4-container">
+                <div class="step-header">
+                    <span class="summary-icon">📝</span>
+                    <div class="summary-content">
+                        <strong>Step 4: Explanation Generation</strong>
+                        <p id="summary-step4">Generated detailed match explanations</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -115,9 +163,12 @@
 
 {% block scripts %}
 <script>
+// Store step details globally for expandable sections
+let currentStepDetails = null;
+
 document.getElementById('search-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const query = document.getElementById('query').value;
     const maxResults = document.getElementById('max_results').value;
     const searchBtn = document.getElementById('search-btn');
@@ -125,7 +176,7 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     const errorSection = document.getElementById('error-section');
     const progressSection = document.getElementById('progress-section');
     const resultsContainer = document.getElementById('results-container');
-    
+
     // Show loading state and progress
     searchBtn.disabled = true;
     searchBtn.querySelector('.btn-text').style.display = 'none';
@@ -134,15 +185,16 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     errorSection.style.display = 'none';
     progressSection.style.display = 'block';
     resetProgressSteps();
-    
+    resetExpandableSections();
+
     // Start step indicators
     const steps = [
         { id: 'step-1', text: 'Generating AI-powered name variations...', delay: 500 },
-        { id: 'step-2', text: 'Filtering 17,991 SDN entries...', delay: 2000 },
+        { id: 'step-2', text: 'Filtering SDN entries...', delay: 2000 },
         { id: 'step-3', text: 'AI ranking and confidence scoring...', delay: 4000 },
         { id: 'step-4', text: 'Generating detailed explanations...', delay: 6000 }
     ];
-    
+
     // Simulate progress steps
     steps.forEach((step, index) => {
         setTimeout(() => {
@@ -150,7 +202,7 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
             document.querySelector(`#${step.id} .step-text`).textContent = step.text;
         }, step.delay);
     });
-    
+
     try {
         const response = await fetch('/search', {
             method: 'POST',
@@ -162,14 +214,18 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
                 max_results: parseInt(maxResults)
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
+            // Store step details for expandable sections
+            currentStepDetails = data.step_details;
+
             // Mark all steps as complete
             completeAllSteps(data);
             setTimeout(() => {
                 displayResults(data);
+                populateStepDetails(data.step_details);
                 resultsSection.style.display = 'block';
                 progressSection.style.display = 'none';
             }, 1000);
@@ -187,6 +243,143 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
         searchBtn.querySelector('.spinner').style.display = 'none';
     }
 });
+
+// Toggle expandable step details
+function toggleStepDetails(stepId) {
+    const details = document.getElementById(`${stepId}-details`);
+    const icon = document.getElementById(`${stepId}-expand-icon`);
+
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        icon.textContent = '▲';
+        icon.classList.add('expanded');
+    } else {
+        details.style.display = 'none';
+        icon.textContent = '▼';
+        icon.classList.remove('expanded');
+    }
+}
+
+// Reset expandable sections
+function resetExpandableSections() {
+    ['step1', 'step2', 'step3'].forEach(stepId => {
+        const details = document.getElementById(`${stepId}-details`);
+        const icon = document.getElementById(`${stepId}-expand-icon`);
+        if (details) details.style.display = 'none';
+        if (icon) {
+            icon.textContent = '▼';
+            icon.classList.remove('expanded');
+        }
+    });
+}
+
+// Populate step details from API response
+function populateStepDetails(stepDetails) {
+    if (!stepDetails) return;
+
+    // Step 1: Name variations
+    const step1 = stepDetails.step1_name_generation;
+    if (step1) {
+        const variationsContainer = document.getElementById('step1-variations');
+        if (step1.variations && step1.variations.length > 0) {
+            variationsContainer.innerHTML = step1.variations.map(v =>
+                `<span class="variation-tag">${escapeHtml(v)}</span>`
+            ).join('');
+        } else {
+            variationsContainer.innerHTML = '<p class="no-data">No variations generated</p>';
+        }
+    }
+
+    // Step 2: Database filtering
+    const step2 = stepDetails.step2_database_filtering;
+    if (step2) {
+        const statsContainer = document.getElementById('step2-stats');
+        statsContainer.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-value">${step2.total_entries_searched?.toLocaleString() || 0}</span>
+                    <span class="stat-label">Entries Searched</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value">${(step2.threshold * 100).toFixed(0)}%</span>
+                    <span class="stat-label">Match Threshold</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value">${step2.matches_found || 0}</span>
+                    <span class="stat-label">Matches Found</span>
+                </div>
+            </div>
+        `;
+
+        const matchesContainer = document.getElementById('step2-matches');
+        if (step2.matches && step2.matches.length > 0) {
+            matchesContainer.innerHTML = `
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Match Score</th>
+                            <th>Match Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${step2.matches.map(m => `
+                            <tr>
+                                <td>${escapeHtml(m.name)}</td>
+                                <td><span class="type-badge">${escapeHtml(m.type)}</span></td>
+                                <td><span class="score-badge">${(m.score * 100).toFixed(1)}%</span></td>
+                                <td>${escapeHtml(m.match_type)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            matchesContainer.innerHTML = '<p class="no-data">No matches found above threshold</p>';
+        }
+    }
+
+    // Step 3: AI Ranking
+    const step3 = stepDetails.step3_ai_ranking;
+    if (step3) {
+        const rankingContainer = document.getElementById('step3-ranking');
+        if (step3.ranking_details && step3.ranking_details.length > 0) {
+            rankingContainer.innerHTML = `
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Name Score</th>
+                            <th>Final Score</th>
+                            <th>Confidence</th>
+                            <th>Ranking Factors</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${step3.ranking_details.map(r => `
+                            <tr>
+                                <td>${escapeHtml(r.name)}</td>
+                                <td><span class="score-badge">${(r.name_match_score * 100).toFixed(1)}%</span></td>
+                                <td><span class="score-badge highlight">${(r.final_score * 100).toFixed(1)}%</span></td>
+                                <td><span class="confidence-tag ${getConfidenceClass(r.confidence)}">${r.confidence}</span></td>
+                                <td>
+                                    <div class="reasons-list">
+                                        ${r.match_reasons.map(reason =>
+                                            `<span class="reason-tag">${escapeHtml(reason)}</span>`
+                                        ).join('')}
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            rankingContainer.innerHTML = '<p class="no-data">No ranking data available</p>';
+        }
+    }
+}
 
 function displayResults(data) {
     const resultsContainer = document.getElementById('results-container');
@@ -319,19 +512,26 @@ function completeAllSteps(data) {
 }
 
 function updateSummarySteps(data) {
+    const stepDetails = data.step_details || {};
+
     // Step 1 Summary: Name variations generated
-    document.getElementById('summary-step1').textContent = `Generated multiple AI-powered name variations for "${data.query}"`;
-    
+    const step1 = stepDetails.step1_name_generation || {};
+    const variationCount = step1.variation_count || 0;
+    document.getElementById('summary-step1').textContent = `Generated ${variationCount} name variations for "${data.query}" (click to expand)`;
+
     // Step 2 Summary: Database filtering results
-    const initialMatches = data.total_matches || 0;
-    document.getElementById('summary-step2').textContent = `Found ${initialMatches} potential matches from 17,991 SDN entries after initial filtering`;
-    
+    const step2 = stepDetails.step2_database_filtering || {};
+    const entriesSearched = step2.total_entries_searched || 0;
+    const matchesFound = step2.matches_found || 0;
+    document.getElementById('summary-step2').textContent = `Found ${matchesFound} potential matches from ${entriesSearched.toLocaleString()} SDN entries (click to expand)`;
+
     // Step 3 Summary: AI ranking and confidence analysis
     const highConf = data.results ? data.results.filter(r => r.confidence === 'HIGH').length : 0;
+    const medHighConf = data.results ? data.results.filter(r => r.confidence === 'MEDIUM-HIGH').length : 0;
     const mediumConf = data.results ? data.results.filter(r => r.confidence === 'MEDIUM').length : 0;
-    const lowConf = data.results ? data.results.filter(r => r.confidence === 'LOW').length : 0;
-    document.getElementById('summary-step3').textContent = `AI analysis completed: ${highConf} high confidence, ${mediumConf} medium confidence, ${lowConf} low confidence matches`;
-    
+    const lowConf = data.results ? data.results.filter(r => ['LOW', 'LOW-MEDIUM'].includes(r.confidence)).length : 0;
+    document.getElementById('summary-step3').textContent = `AI ranked: ${highConf} high, ${medHighConf} med-high, ${mediumConf} medium, ${lowConf} low confidence (click to expand)`;
+
     // Step 4 Summary: Explanation generation
     const withExplanations = data.results ? data.results.filter(r => r.explanation && r.explanation.length > 0).length : 0;
     document.getElementById('summary-step4').textContent = `Generated detailed explanations for ${withExplanations} matches requiring further review`;

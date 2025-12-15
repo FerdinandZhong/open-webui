@@ -37,32 +37,81 @@ class SDNSearchService:
         """Load SDN data into memory."""
         self.entries = self.loader.load_entries()
     
-    def search(self, query: str, max_results: int = 10) -> List[MatchResult]:
+    def search(self, query: str, max_results: int = 10) -> Dict:
         """
         Main search function that combines both steps.
+        Returns both results and step details for UI display.
         """
         # Parse query
         query_info = self._parse_query(query)
-        
+
+        # Initialize step details
+        step_details = {
+            'step1_name_generation': {
+                'query_name': query_info['name'],
+                'variations': [],
+                'variation_count': 0
+            },
+            'step2_database_filtering': {
+                'total_entries_searched': len(self.entries),
+                'threshold': self.name_matcher.threshold,
+                'matches_found': 0,
+                'matches': []
+            },
+            'step3_ai_ranking': {
+                'matches_ranked': 0,
+                'ranking_details': []
+            }
+        }
+
         # Generate name variations once for the query
         logger.info(f"Starting search for: '{query_info['name']}'")
         logger.debug(f"Searching against {len(self.entries)} entries")
         query_variations = self.name_matcher.generate_query_variations(query_info['name'])
         logger.info(f"Generated {len(query_variations)} query variations")
-        
+
+        # Store step 1 details
+        step_details['step1_name_generation']['variations'] = query_variations
+        step_details['step1_name_generation']['variation_count'] = len(query_variations)
+
         # Step 1: Initial name-based filtering
         logger.info("Step 1: Filtering matches...")
         filtered = self.name_matcher.filter_matches(query_variations, self.entries)
         logger.info(f"Step 1 complete: Found {len(filtered)} initial matches")
-        
+
+        # Store step 2 details
+        step_details['step2_database_filtering']['matches_found'] = len(filtered)
+        step_details['step2_database_filtering']['matches'] = [
+            {
+                'name': m['entry'].name,
+                'score': round(m['name_match_score'], 3),
+                'match_type': m['match_reasons'][0] if m['match_reasons'] else 'name match',
+                'type': m['entry'].type
+            }
+            for m in filtered
+        ]
+
         if not filtered:
-            return []
-        
+            return {'results': [], 'step_details': step_details}
+
         # Step 2: Context-based ranking
         logger.info("Step 2: Ranking matches...")
         ranked = self.ranker.rank_matches(query_info, filtered)
         logger.info(f"Step 2 complete: Ranked {len(ranked)} matches")
-        
+
+        # Store step 3 details
+        step_details['step3_ai_ranking']['matches_ranked'] = len(ranked)
+        step_details['step3_ai_ranking']['ranking_details'] = [
+            {
+                'name': m['entry'].name,
+                'name_match_score': round(m.get('name_match_score', 0), 3),
+                'final_score': round(m.get('llm_score', m.get('score', 0)), 3),
+                'confidence': m['confidence'].value if hasattr(m['confidence'], 'value') else str(m['confidence']),
+                'match_reasons': m['match_reasons']
+            }
+            for m in ranked
+        ]
+
         # Step 3: Generate explanations for high-confidence matches
         if self.use_llm:
             logger.info("Step 3: Generating explanations for high-confidence matches...")
@@ -78,7 +127,7 @@ class SDNSearchService:
                         match['explanation'] = None
                 else:
                     match['explanation'] = None
-        
+
         # Format results
         results = []
         for match in ranked[:max_results]:
@@ -103,8 +152,8 @@ class SDNSearchService:
                 explanation=match.get('explanation')
             )
             results.append(result)
-        
-        return results
+
+        return {'results': results, 'step_details': step_details}
     
     @staticmethod
     def _parse_query(query: str) -> Dict[str, Optional[str]]:
