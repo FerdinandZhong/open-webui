@@ -38,24 +38,27 @@ def health_check():
 def search_sdn():
     """
     Search the SDN list with two-step matching.
-    
+
     Step 1: Flexible name matching
     Step 2: Context-based ranking (DOB, nationality, etc.)
     """
     if not search_service:
         return jsonify({"error": "SDN data not loaded"}), 503
-    
+
     try:
         data = request.get_json()
         query_text = data.get("query", "")
         max_results = data.get("max_results", 10)
-        
-        results = search_service.search(query_text, max_results)
-        
+
+        search_result = search_service.search(query_text, max_results)
+        results = search_result['results']
+        step_details = search_result['step_details']
+
         return jsonify({
             "query": query_text,
             "total_matches": len(results),
-            "results": [result.dict() for result in results]
+            "results": [result.dict() for result in results],
+            "step_details": step_details
         })
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
