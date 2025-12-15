@@ -70,83 +70,192 @@
 <div id="results-section" class="results-section" style="display: none;">
     <h3 class="results-title">Search Results</h3>
     
-    <!-- Step Summary Section with Expandable Details -->
-    <div id="step-summary" class="step-summary">
-        <h4>Processing Summary</h4>
-        <div class="summary-steps">
+    <!-- Processing Pipeline Visualization -->
+    <div id="step-summary" class="pipeline-container">
+        <div class="pipeline-header">
+            <h4>Search Pipeline</h4>
+            <div class="pipeline-actions">
+                <button class="btn-expand-all" onclick="expandAllSteps()">Expand All</button>
+                <button class="btn-collapse-all" onclick="collapseAllSteps()">Collapse All</button>
+            </div>
+        </div>
+
+        <!-- Visual Timeline -->
+        <div class="pipeline-timeline">
             <!-- Step 1: Name Generation -->
-            <div class="summary-step expandable" id="step1-container">
-                <div class="step-header" onclick="toggleStepDetails('step1')">
-                    <span class="summary-icon">🤖</span>
-                    <div class="summary-content">
-                        <strong>Step 1: AI Name Generation</strong>
-                        <p id="summary-step1">Generated AI-powered name variations</p>
+            <div class="pipeline-step" id="step1-container">
+                <div class="step-indicator">
+                    <div class="step-node completed">
+                        <span class="step-icon">🤖</span>
                     </div>
-                    <span class="expand-icon" id="step1-expand-icon">▼</span>
+                    <div class="step-connector"></div>
                 </div>
-                <div class="step-details" id="step1-details" style="display: none;">
-                    <div class="details-content">
-                        <h5>Generated Name Variations</h5>
-                        <p class="details-description">These variations are used to find potential matches in the database:</p>
-                        <div class="name-variations-list" id="step1-variations">
-                            <!-- Name variations will be populated here -->
+                <div class="step-card">
+                    <div class="step-card-header" onclick="toggleStepDetails('step1')">
+                        <div class="step-info">
+                            <span class="step-badge">Step 1</span>
+                            <h5>AI Name Generation</h5>
+                            <p class="step-summary" id="summary-step1">Generated name variations</p>
+                        </div>
+                        <div class="step-metrics" id="step1-metrics">
+                            <div class="metric">
+                                <span class="metric-value" id="step1-count">-</span>
+                                <span class="metric-label">Variations</span>
+                            </div>
+                        </div>
+                        <button class="btn-details" aria-expanded="false">
+                            <span class="btn-text">Details</span>
+                            <svg class="chevron" viewBox="0 0 24 24" width="20" height="20">
+                                <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="step-card-body" id="step1-details">
+                        <div class="details-section">
+                            <h6>Generated Name Variations</h6>
+                            <p class="details-hint">These variations help find potential matches with different spellings or formats:</p>
+                            <div class="variations-cloud" id="step1-variations">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Step 2: Database Filtering -->
-            <div class="summary-step expandable" id="step2-container">
-                <div class="step-header" onclick="toggleStepDetails('step2')">
-                    <span class="summary-icon">🔍</span>
-                    <div class="summary-content">
-                        <strong>Step 2: Database Filtering</strong>
-                        <p id="summary-step2">Searched through SDN entries</p>
+            <div class="pipeline-step" id="step2-container">
+                <div class="step-indicator">
+                    <div class="step-node completed">
+                        <span class="step-icon">🔍</span>
                     </div>
-                    <span class="expand-icon" id="step2-expand-icon">▼</span>
+                    <div class="step-connector"></div>
                 </div>
-                <div class="step-details" id="step2-details" style="display: none;">
-                    <div class="details-content">
-                        <h5>Filtering Results</h5>
-                        <div class="filter-stats" id="step2-stats">
-                            <!-- Filter stats will be populated here -->
+                <div class="step-card">
+                    <div class="step-card-header" onclick="toggleStepDetails('step2')">
+                        <div class="step-info">
+                            <span class="step-badge">Step 2</span>
+                            <h5>Database Filtering</h5>
+                            <p class="step-summary" id="summary-step2">Fuzzy matching against SDN list</p>
                         </div>
-                        <h5>Initial Matches (Before AI Ranking)</h5>
-                        <div class="filter-matches-table" id="step2-matches">
-                            <!-- Matches table will be populated here -->
+                        <div class="step-metrics" id="step2-metrics">
+                            <div class="metric">
+                                <span class="metric-value" id="step2-searched">-</span>
+                                <span class="metric-label">Searched</span>
+                            </div>
+                            <div class="metric highlight">
+                                <span class="metric-value" id="step2-found">-</span>
+                                <span class="metric-label">Found</span>
+                            </div>
+                        </div>
+                        <button class="btn-details" aria-expanded="false">
+                            <span class="btn-text">Details</span>
+                            <svg class="chevron" viewBox="0 0 24 24" width="20" height="20">
+                                <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="step-card-body" id="step2-details">
+                        <div class="details-section">
+                            <div class="filter-overview">
+                                <div class="overview-stat">
+                                    <div class="stat-icon">📊</div>
+                                    <div class="stat-info">
+                                        <span class="stat-number" id="step2-total">0</span>
+                                        <span class="stat-text">Total Entries</span>
+                                    </div>
+                                </div>
+                                <div class="overview-stat">
+                                    <div class="stat-icon">🎯</div>
+                                    <div class="stat-info">
+                                        <span class="stat-number" id="step2-threshold">70%</span>
+                                        <span class="stat-text">Match Threshold</span>
+                                    </div>
+                                </div>
+                                <div class="overview-stat success">
+                                    <div class="stat-icon">✅</div>
+                                    <div class="stat-info">
+                                        <span class="stat-number" id="step2-matches-count">0</span>
+                                        <span class="stat-text">Matches Found</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h6>Initial Matches</h6>
+                            <div class="matches-list" id="step2-matches">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Step 3: AI Ranking -->
-            <div class="summary-step expandable" id="step3-container">
-                <div class="step-header" onclick="toggleStepDetails('step3')">
-                    <span class="summary-icon">⚖️</span>
-                    <div class="summary-content">
-                        <strong>Step 3: AI Ranking & Scoring</strong>
-                        <p id="summary-step3">Applied AI-powered confidence scoring</p>
+            <div class="pipeline-step" id="step3-container">
+                <div class="step-indicator">
+                    <div class="step-node completed">
+                        <span class="step-icon">⚖️</span>
                     </div>
-                    <span class="expand-icon" id="step3-expand-icon">▼</span>
+                    <div class="step-connector"></div>
                 </div>
-                <div class="step-details" id="step3-details" style="display: none;">
-                    <div class="details-content">
-                        <h5>AI Ranking Details</h5>
-                        <p class="details-description">Each match is analyzed using contextual factors (DOB, nationality, etc.):</p>
-                        <div class="ranking-table" id="step3-ranking">
-                            <!-- Ranking details will be populated here -->
+                <div class="step-card">
+                    <div class="step-card-header" onclick="toggleStepDetails('step3')">
+                        <div class="step-info">
+                            <span class="step-badge">Step 3</span>
+                            <h5>AI Ranking & Scoring</h5>
+                            <p class="step-summary" id="summary-step3">Context-aware confidence scoring</p>
+                        </div>
+                        <div class="step-metrics" id="step3-metrics">
+                            <div class="metric danger">
+                                <span class="metric-value" id="step3-high">0</span>
+                                <span class="metric-label">High</span>
+                            </div>
+                            <div class="metric warning">
+                                <span class="metric-value" id="step3-medium">0</span>
+                                <span class="metric-label">Medium</span>
+                            </div>
+                            <div class="metric success">
+                                <span class="metric-value" id="step3-low">0</span>
+                                <span class="metric-label">Low</span>
+                            </div>
+                        </div>
+                        <button class="btn-details" aria-expanded="false">
+                            <span class="btn-text">Details</span>
+                            <svg class="chevron" viewBox="0 0 24 24" width="20" height="20">
+                                <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="step-card-body" id="step3-details">
+                        <div class="details-section">
+                            <h6>Ranking Analysis</h6>
+                            <p class="details-hint">Each match is scored based on name similarity, DOB, nationality, and other contextual factors:</p>
+                            <div class="ranking-cards" id="step3-ranking">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Step 4: Explanation Generation -->
-            <div class="summary-step" id="step4-container">
-                <div class="step-header">
-                    <span class="summary-icon">📝</span>
-                    <div class="summary-content">
-                        <strong>Step 4: Explanation Generation</strong>
-                        <p id="summary-step4">Generated detailed match explanations</p>
+            <div class="pipeline-step" id="step4-container">
+                <div class="step-indicator">
+                    <div class="step-node completed">
+                        <span class="step-icon">📝</span>
+                    </div>
+                </div>
+                <div class="step-card final">
+                    <div class="step-card-header">
+                        <div class="step-info">
+                            <span class="step-badge">Step 4</span>
+                            <h5>Explanation Generation</h5>
+                            <p class="step-summary" id="summary-step4">AI-powered match explanations</p>
+                        </div>
+                        <div class="step-metrics">
+                            <div class="metric">
+                                <span class="metric-value" id="step4-explanations">0</span>
+                                <span class="metric-label">Explanations</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -247,30 +356,43 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
 // Toggle expandable step details
 function toggleStepDetails(stepId) {
     const details = document.getElementById(`${stepId}-details`);
-    const icon = document.getElementById(`${stepId}-expand-icon`);
+    const card = document.getElementById(`${stepId}-container`);
+    const btn = card?.querySelector('.btn-details');
 
-    if (details.style.display === 'none') {
-        details.style.display = 'block';
-        icon.textContent = '▲';
-        icon.classList.add('expanded');
+    if (details.classList.contains('expanded')) {
+        details.classList.remove('expanded');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
     } else {
-        details.style.display = 'none';
-        icon.textContent = '▼';
-        icon.classList.remove('expanded');
+        details.classList.add('expanded');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
     }
+}
+
+// Expand all steps
+function expandAllSteps() {
+    ['step1', 'step2', 'step3'].forEach(stepId => {
+        const details = document.getElementById(`${stepId}-details`);
+        const card = document.getElementById(`${stepId}-container`);
+        const btn = card?.querySelector('.btn-details');
+        if (details) details.classList.add('expanded');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+    });
+}
+
+// Collapse all steps
+function collapseAllSteps() {
+    ['step1', 'step2', 'step3'].forEach(stepId => {
+        const details = document.getElementById(`${stepId}-details`);
+        const card = document.getElementById(`${stepId}-container`);
+        const btn = card?.querySelector('.btn-details');
+        if (details) details.classList.remove('expanded');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
 }
 
 // Reset expandable sections
 function resetExpandableSections() {
-    ['step1', 'step2', 'step3'].forEach(stepId => {
-        const details = document.getElementById(`${stepId}-details`);
-        const icon = document.getElementById(`${stepId}-expand-icon`);
-        if (details) details.style.display = 'none';
-        if (icon) {
-            icon.textContent = '▼';
-            icon.classList.remove('expanded');
-        }
-    });
+    collapseAllSteps();
 }
 
 // Populate step details from API response
@@ -280,10 +402,13 @@ function populateStepDetails(stepDetails) {
     // Step 1: Name variations
     const step1 = stepDetails.step1_name_generation;
     if (step1) {
+        // Update metric
+        document.getElementById('step1-count').textContent = step1.variation_count || 0;
+
         const variationsContainer = document.getElementById('step1-variations');
         if (step1.variations && step1.variations.length > 0) {
             variationsContainer.innerHTML = step1.variations.map(v =>
-                `<span class="variation-tag">${escapeHtml(v)}</span>`
+                `<span class="variation-chip">${escapeHtml(v)}</span>`
             ).join('');
         } else {
             variationsContainer.innerHTML = '<p class="no-data">No variations generated</p>';
@@ -293,48 +418,26 @@ function populateStepDetails(stepDetails) {
     // Step 2: Database filtering
     const step2 = stepDetails.step2_database_filtering;
     if (step2) {
-        const statsContainer = document.getElementById('step2-stats');
-        statsContainer.innerHTML = `
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <span class="stat-value">${step2.total_entries_searched?.toLocaleString() || 0}</span>
-                    <span class="stat-label">Entries Searched</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-value">${(step2.threshold * 100).toFixed(0)}%</span>
-                    <span class="stat-label">Match Threshold</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-value">${step2.matches_found || 0}</span>
-                    <span class="stat-label">Matches Found</span>
-                </div>
-            </div>
-        `;
+        // Update metrics
+        document.getElementById('step2-searched').textContent = formatNumber(step2.total_entries_searched || 0);
+        document.getElementById('step2-found').textContent = step2.matches_found || 0;
+
+        // Update overview stats
+        document.getElementById('step2-total').textContent = formatNumber(step2.total_entries_searched || 0);
+        document.getElementById('step2-threshold').textContent = `${(step2.threshold * 100).toFixed(0)}%`;
+        document.getElementById('step2-matches-count').textContent = step2.matches_found || 0;
 
         const matchesContainer = document.getElementById('step2-matches');
         if (step2.matches && step2.matches.length > 0) {
-            matchesContainer.innerHTML = `
-                <table class="details-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Match Score</th>
-                            <th>Match Type</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${step2.matches.map(m => `
-                            <tr>
-                                <td>${escapeHtml(m.name)}</td>
-                                <td><span class="type-badge">${escapeHtml(m.type)}</span></td>
-                                <td><span class="score-badge">${(m.score * 100).toFixed(1)}%</span></td>
-                                <td>${escapeHtml(m.match_type)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            matchesContainer.innerHTML = step2.matches.map(m => `
+                <div class="match-item">
+                    <div class="match-item-info">
+                        <span class="match-item-name">${escapeHtml(m.name)}</span>
+                        <span class="match-item-type">${escapeHtml(m.type)}</span>
+                    </div>
+                    <span class="match-item-score">${(m.score * 100).toFixed(1)}%</span>
+                </div>
+            `).join('');
         } else {
             matchesContainer.innerHTML = '<p class="no-data">No matches found above threshold</p>';
         }
@@ -342,43 +445,55 @@ function populateStepDetails(stepDetails) {
 
     // Step 3: AI Ranking
     const step3 = stepDetails.step3_ai_ranking;
-    if (step3) {
+    if (step3 && step3.ranking_details) {
+        // Update metrics
+        const highCount = step3.ranking_details.filter(r => r.confidence === 'HIGH').length;
+        const medCount = step3.ranking_details.filter(r => ['MEDIUM', 'MEDIUM-HIGH'].includes(r.confidence)).length;
+        const lowCount = step3.ranking_details.filter(r => ['LOW', 'LOW-MEDIUM'].includes(r.confidence)).length;
+
+        document.getElementById('step3-high').textContent = highCount;
+        document.getElementById('step3-medium').textContent = medCount;
+        document.getElementById('step3-low').textContent = lowCount;
+
         const rankingContainer = document.getElementById('step3-ranking');
-        if (step3.ranking_details && step3.ranking_details.length > 0) {
-            rankingContainer.innerHTML = `
-                <table class="details-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Name Score</th>
-                            <th>Final Score</th>
-                            <th>Confidence</th>
-                            <th>Ranking Factors</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${step3.ranking_details.map(r => `
-                            <tr>
-                                <td>${escapeHtml(r.name)}</td>
-                                <td><span class="score-badge">${(r.name_match_score * 100).toFixed(1)}%</span></td>
-                                <td><span class="score-badge highlight">${(r.final_score * 100).toFixed(1)}%</span></td>
-                                <td><span class="confidence-tag ${getConfidenceClass(r.confidence)}">${r.confidence}</span></td>
-                                <td>
-                                    <div class="reasons-list">
-                                        ${r.match_reasons.map(reason =>
-                                            `<span class="reason-tag">${escapeHtml(reason)}</span>`
-                                        ).join('')}
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+        if (step3.ranking_details.length > 0) {
+            rankingContainer.innerHTML = step3.ranking_details.map(r => `
+                <div class="ranking-card">
+                    <div class="ranking-card-header">
+                        <span class="ranking-card-name">${escapeHtml(r.name)}</span>
+                        <span class="ranking-card-confidence ${getConfidenceClass(r.confidence).replace('confidence-', '')}">${r.confidence}</span>
+                    </div>
+                    <div class="ranking-card-body">
+                        <div class="ranking-scores">
+                            <div class="ranking-score">
+                                <span class="ranking-score-label">Name Match</span>
+                                <span class="ranking-score-value">${(r.name_match_score * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="ranking-score">
+                                <span class="ranking-score-label">Final Score</span>
+                                <span class="ranking-score-value final">${(r.final_score * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        <div class="ranking-factors">
+                            ${r.match_reasons.map(reason =>
+                                `<span class="factor-tag">${escapeHtml(reason)}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         } else {
             rankingContainer.innerHTML = '<p class="no-data">No ranking data available</p>';
         }
     }
+}
+
+// Format large numbers
+function formatNumber(num) {
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
 }
 
 function displayResults(data) {
@@ -514,27 +629,23 @@ function completeAllSteps(data) {
 function updateSummarySteps(data) {
     const stepDetails = data.step_details || {};
 
-    // Step 1 Summary: Name variations generated
+    // Step 1 Summary
     const step1 = stepDetails.step1_name_generation || {};
     const variationCount = step1.variation_count || 0;
-    document.getElementById('summary-step1').textContent = `Generated ${variationCount} name variations for "${data.query}" (click to expand)`;
+    document.getElementById('summary-step1').textContent = `Generated ${variationCount} variations for "${data.query}"`;
 
-    // Step 2 Summary: Database filtering results
+    // Step 2 Summary
     const step2 = stepDetails.step2_database_filtering || {};
-    const entriesSearched = step2.total_entries_searched || 0;
     const matchesFound = step2.matches_found || 0;
-    document.getElementById('summary-step2').textContent = `Found ${matchesFound} potential matches from ${entriesSearched.toLocaleString()} SDN entries (click to expand)`;
+    document.getElementById('summary-step2').textContent = `Found ${matchesFound} potential matches`;
 
-    // Step 3 Summary: AI ranking and confidence analysis
-    const highConf = data.results ? data.results.filter(r => r.confidence === 'HIGH').length : 0;
-    const medHighConf = data.results ? data.results.filter(r => r.confidence === 'MEDIUM-HIGH').length : 0;
-    const mediumConf = data.results ? data.results.filter(r => r.confidence === 'MEDIUM').length : 0;
-    const lowConf = data.results ? data.results.filter(r => ['LOW', 'LOW-MEDIUM'].includes(r.confidence)).length : 0;
-    document.getElementById('summary-step3').textContent = `AI ranked: ${highConf} high, ${medHighConf} med-high, ${mediumConf} medium, ${lowConf} low confidence (click to expand)`;
+    // Step 3 Summary
+    document.getElementById('summary-step3').textContent = `Analyzed ${data.total_matches || 0} matches with AI`;
 
-    // Step 4 Summary: Explanation generation
+    // Step 4 Summary
     const withExplanations = data.results ? data.results.filter(r => r.explanation && r.explanation.length > 0).length : 0;
-    document.getElementById('summary-step4').textContent = `Generated detailed explanations for ${withExplanations} matches requiring further review`;
+    document.getElementById('summary-step4').textContent = `${withExplanations} detailed explanations generated`;
+    document.getElementById('step4-explanations').textContent = withExplanations;
 }
 
 function markStepsAsError() {
