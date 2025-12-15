@@ -9,6 +9,20 @@ from ..utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
+def _calculate_confidence_from_score(score: float) -> str:
+    """Calculate confidence level based on the actual score."""
+    if score >= 0.8:
+        return 'HIGH'
+    elif score >= 0.6:
+        return 'MEDIUM-HIGH'
+    elif score >= 0.4:
+        return 'MEDIUM'
+    elif score >= 0.2:
+        return 'LOW-MEDIUM'
+    else:
+        return 'LOW'
+
+
 class LLMService:
     """Service for LLM-based operations including name generation and match assessment."""
     
@@ -140,14 +154,18 @@ Return a JSON object with:
             result = result.strip()
             
             assessment = json.loads(result)
-            
+
+            # Use the actual score to determine confidence (don't trust LLM's confidence string)
+            llm_score = assessment.get('score', 0.0)
+            calculated_confidence = _calculate_confidence_from_score(llm_score)
+
             result_data = {
                 'is_match': assessment.get('is_match', False),
-                'confidence': assessment.get('confidence', 'LOW'),
-                'llm_score': assessment.get('score', 0.0),
+                'confidence': calculated_confidence,  # Use calculated confidence, not LLM's
+                'llm_score': llm_score,
                 'reasoning': assessment.get('reasoning', '')
             }
-            
+
             logger.info(f"LLM assessment result: match={result_data['is_match']}, confidence={result_data['confidence']}, score={result_data['llm_score']:.3f}")
             
             return result_data
@@ -222,14 +240,18 @@ Return a JSON object with:
             result = result.strip()
             
             assessment = json.loads(result)
-            
+
+            # Use the actual score to determine confidence (don't trust LLM's confidence string)
+            llm_score = assessment.get('score', 0.0)
+            calculated_confidence = _calculate_confidence_from_score(llm_score)
+
             result_data = {
                 'is_match': assessment.get('is_match', False),
-                'confidence': assessment.get('confidence', 'LOW'),
-                'llm_score': assessment.get('score', 0.0),
+                'confidence': calculated_confidence,  # Use calculated confidence, not LLM's
+                'llm_score': llm_score,
                 'reasoning': assessment.get('reasoning', '')
             }
-            
+
             logger.info(f"LLM assessment result: match={result_data['is_match']}, confidence={result_data['confidence']}, score={result_data['llm_score']:.3f}")
             
             return result_data
