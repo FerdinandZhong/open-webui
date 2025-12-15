@@ -42,21 +42,38 @@ def index():
 def search():
     if not search_service:
         return jsonify({"error": "SDN data not loaded"}), 503
-    
+
     try:
         data = request.get_json()
         query = data.get('query', '')
         max_results = data.get('max_results', 10)
-        
-        results = search_service.search(query, max_results)
-        
+
+        # search() now returns dict with 'results' and 'step_details'
+        search_result = search_service.search(query, max_results)
+        results = search_result['results']
+        step_details = search_result['step_details']
+
+        # Convert results to dicts, handling Pydantic v2
+        results_dicts = []
+        for result in results:
+            if hasattr(result, 'model_dump'):
+                # Use mode='json' for Pydantic v2 to ensure JSON-serializable output
+                results_dicts.append(result.model_dump(mode='json'))
+            elif hasattr(result, 'dict'):
+                results_dicts.append(result.dict())
+            else:
+                logger.error(f"Result is not a Pydantic model: {type(result)}")
+                continue
+
         return jsonify({
             "query": query,
-            "total_matches": len(results),
-            "results": [result.dict() for result in results]
+            "total_matches": len(results_dicts),
+            "results": results_dicts,
+            "step_details": step_details
         })
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/health')
