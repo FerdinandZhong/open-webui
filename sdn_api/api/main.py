@@ -57,7 +57,7 @@ def search_sdn():
         return jsonify({
             "query": query_text,
             "total_matches": len(results),
-            "results": [result.dict() for result in results],
+            "results": [result.model_dump() if hasattr(result, 'model_dump') else result.dict() for result in results],
             "step_details": step_details
         })
     except Exception as e:
