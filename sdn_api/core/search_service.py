@@ -115,9 +115,10 @@ class SDNSearchService:
         # Step 3: Generate explanations for high-confidence matches
         if self.use_llm:
             logger.info("Step 3: Generating explanations for high-confidence matches...")
+            high_confidence_values = [ConfidenceLevel.HIGH, ConfidenceLevel.MEDIUM_HIGH, 'HIGH', 'MEDIUM-HIGH', 'MEDIUM_HIGH']
             for match in ranked[:max_results]:
                 # Generate explanation for HIGH confidence matches
-                if match['confidence'] in [ConfidenceLevel.HIGH, ConfidenceLevel.MEDIUM_HIGH]:
+                if match['confidence'] in high_confidence_values:
                     try:
                         explanation = self.llm_service.generate_explanation(query_info, match)
                         match['explanation'] = explanation
@@ -132,13 +133,17 @@ class SDNSearchService:
         results = []
         for match in ranked[:max_results]:
             entry = match['entry']
+            # Convert confidence string to enum if needed
+            confidence = match['confidence']
+            if isinstance(confidence, str):
+                confidence = self._str_to_confidence_level(confidence)
             result = MatchResult(
                 name=entry.name,
                 type=entry.type,
                 name_match_score=match['name_match_score'],
                 llm_score=match['llm_score'],
                 score=match['llm_score'],  # Keep for backward compatibility
-                confidence=match['confidence'],
+                confidence=confidence,
                 match_reasons=match['match_reasons'],
                 details={
                     'id': entry.id,
@@ -154,6 +159,20 @@ class SDNSearchService:
             results.append(result)
 
         return {'results': results, 'step_details': step_details}
+
+    @staticmethod
+    def _str_to_confidence_level(confidence_str: str) -> ConfidenceLevel:
+        """Convert a string confidence level to ConfidenceLevel enum."""
+        mapping = {
+            'HIGH': ConfidenceLevel.HIGH,
+            'MEDIUM-HIGH': ConfidenceLevel.MEDIUM_HIGH,
+            'MEDIUM_HIGH': ConfidenceLevel.MEDIUM_HIGH,
+            'MEDIUM': ConfidenceLevel.MEDIUM,
+            'LOW-MEDIUM': ConfidenceLevel.LOW_MEDIUM,
+            'LOW_MEDIUM': ConfidenceLevel.LOW_MEDIUM,
+            'LOW': ConfidenceLevel.LOW,
+        }
+        return mapping.get(confidence_str.upper(), ConfidenceLevel.LOW)
     
     @staticmethod
     def _parse_query(query: str) -> Dict[str, Optional[str]]:
