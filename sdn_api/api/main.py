@@ -54,10 +54,22 @@ def search_sdn():
         results = search_result['results']
         step_details = search_result['step_details']
 
+        # Convert results to dicts, handling both Pydantic v1 and v2
+        results_dicts = []
+        for i, result in enumerate(results):
+            if hasattr(result, 'model_dump'):
+                results_dicts.append(result.model_dump())
+            elif hasattr(result, 'dict'):
+                results_dicts.append(result.dict())
+            else:
+                logger.error(f"Result {i} is not a Pydantic model: {type(result)} - {result}")
+                # Skip invalid results
+                continue
+
         return jsonify({
             "query": query_text,
-            "total_matches": len(results),
-            "results": [result.dict() for result in results],
+            "total_matches": len(results_dicts),
+            "results": results_dicts,
             "step_details": step_details
         })
     except Exception as e:
