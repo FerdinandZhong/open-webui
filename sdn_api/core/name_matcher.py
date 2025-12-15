@@ -42,7 +42,7 @@ class NameMatcher:
         # Sort by score
         matches.sort(key=lambda x: x['score'], reverse=True)
         logger.info(f"Filtered to {len(matches)} matches above threshold {self.threshold}")
-        return matches[:10]  # Return top 10 matches for LLM processing
+        return matches[:20]  # Return top 20 matches for ranking analysis
     
     def _flexible_name_match_with_variations(self, query_variations: List[str], target_name: str, aliases: List[str]) -> Tuple[float, str]:
         """Perform flexible name matching using pre-generated query variations."""
