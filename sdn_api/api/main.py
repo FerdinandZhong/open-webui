@@ -10,6 +10,25 @@ from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
+def _make_json_safe(obj):
+    """Recursively convert objects to JSON-serializable format."""
+    if isinstance(obj, dict):
+        return {k: _make_json_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_make_json_safe(item) for item in obj]
+    elif hasattr(obj, 'value'):  # Enum
+        return obj.value
+    elif hasattr(obj, 'model_dump'):  # Pydantic v2
+        return obj.model_dump()
+    elif hasattr(obj, 'dict'):  # Pydantic v1
+        return obj.dict()
+    elif hasattr(obj, '__dict__'):  # Other objects
+        return str(obj)
+    else:
+        return obj
+
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS
 
@@ -57,14 +76,29 @@ def search_sdn():
         # Convert results to dicts, handling both Pydantic v1 and v2
         results_dicts = []
         for i, result in enumerate(results):
-            if hasattr(result, 'model_dump'):
-                results_dicts.append(result.model_dump())
-            elif hasattr(result, 'dict'):
-                results_dicts.append(result.dict())
-            else:
-                logger.error(f"Result {i} is not a Pydantic model: {type(result)} - {result}")
-                # Skip invalid results
+            try:
+                if hasattr(result, 'model_dump'):
+                    # Use mode='json' for Pydantic v2 to ensure JSON-serializable output
+                    results_dicts.append(result.model_dump(mode='json'))
+                elif hasattr(result, 'dict'):
+                    results_dicts.append(result.dict())
+                else:
+                    logger.error(f"Result {i} is not a Pydantic model: {type(result)} - {result}")
+                    continue
+            except Exception as convert_err:
+                logger.error(f"Error converting result {i}: {convert_err}")
+                logger.error(f"Result type: {type(result)}, Result: {result}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 continue
+
+        # Serialize step_details - convert any non-serializable objects
+        try:
+            import json
+            json.dumps(step_details)  # Test if serializable
+        except (TypeError, ValueError) as e:
+            logger.error(f"step_details not JSON serializable: {e}")
+            # Make step_details JSON-safe
+            step_details = _make_json_safe(step_details)
 
         return jsonify({
             "query": query_text,
@@ -74,6 +108,7 @@ def search_sdn():
         })
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 
