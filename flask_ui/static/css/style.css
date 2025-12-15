@@ -747,7 +747,7 @@ textarea.form-control {
 }
 
 .step-card-body.expanded {
-    max-height: 800px;
+    max-height: 3000px; /* Increased to fit all ranking cards */
     border-top-color: var(--border-color);
 }
 
