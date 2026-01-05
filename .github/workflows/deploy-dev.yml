@@ -27,4 +27,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Fallback to automatic token if PAT not available
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # OpenAI API key for LLM features
         run: |
-          python .github/scripts/deploy_to_cml.py
+          python cai_integration/deploy_to_cml.py
