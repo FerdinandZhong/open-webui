@@ -278,8 +278,8 @@ class CMLDeployer:
             "subdomain": f"open-webui-{project_id.lower()}",
             "script": "cai_integration/run_merged_app.py",
             "kernel": "python3",
-            "cpu": 2,
-            "memory": 8,
+            "cpu": 8,
+            "memory": 64,
             "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
         }
         print("Application data:")

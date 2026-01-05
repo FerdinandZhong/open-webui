@@ -67,7 +67,7 @@ def main():
     # Install dependencies
     print("\n📦 Installing dependencies...")
     backend_dir = os.path.join(os.getcwd(), "backend")
-    if not run_command("uv pip install -e .", cwd=backend_dir):
+    if not run_command("uv pip install -r requirements.txt", cwd=backend_dir):
         print("❌ Failed to install dependencies")
         sys.exit(1)
     
