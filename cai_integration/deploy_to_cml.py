@@ -280,7 +280,7 @@ class CMLDeployer:
         print("Application data:")
         print(json.dumps(app_data, indent=2))
         
-        result = self.make_request("POST", "applications", data=app_data)
+        result = self.make_request("POST", f"projects/{project_id}/applications", data=app_data)
         if result is not None:
             print("✅ Application creation/update request sent successfully.")
         else:
