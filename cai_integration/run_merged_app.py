@@ -38,19 +38,6 @@ def run_command(command, working_dir):
 def main():
     """Main function to setup and run the application."""
     backend_dir = "./backend"
-    frontend_dir = "."  # Assuming frontend is at the root
-
-    # Install backend dependencies
-    print("-- Installing backend dependencies --")
-    run_command("pip install -r requirements.txt", backend_dir)
-
-    # Install frontend dependencies
-    print("\n-- Installing frontend dependencies --")
-    run_command("npm install", frontend_dir)
-
-    # Build frontend
-    print("\n-- Building frontend --")
-    run_command("npm run build", frontend_dir)
 
     # Start the backend server
     print("\n--- Starting backend server ---")

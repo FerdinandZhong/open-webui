@@ -17,15 +17,6 @@ jobs:
     environment:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"  # Will be replaced at runtime
 
-  create_env:
-    name: Create Python Environment
-    script: cai_integration/setup_environment.py
-    kernel: python3
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 1
-    memory: 2
-    timeout: 1800  # 30 minutes
-    environment: {}
-    arguments: ""
+
 
 

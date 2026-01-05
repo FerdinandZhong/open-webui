@@ -264,7 +264,24 @@ class CMLDeployer:
                 if job_id:
                     processed_jobs[job_key] = job_id
 
-    def create_application(self, project_id: str) -> None:
+    def build_and_push_runtime(self, project_id: str) -> Optional[str]:
+        """Build and push a custom CML runtime."""
+        print("\n--- Building and Pushing Custom Runtime ---")
+        runtime_data = {
+            "projectId": project_id,
+            "image": "cai_integration/Dockerfile",
+            "tag": "open-webui-runtime",
+        }
+        result = self.make_request("POST", "runtimes", data=runtime_data)
+        if result and result.get("id"):
+            runtime_id = result["id"]
+            print(f"✅ Runtime build started with ID: {runtime_id}")
+            return runtime_id
+        else:
+            print("❌ Failed to start runtime build.")
+            return None
+
+    def create_application(self, project_id: str, runtime_id: str) -> None:
         """Create a CML application."""
         print("\n--- Creating Application ---")
         app_data = {
@@ -275,7 +292,7 @@ class CMLDeployer:
             "kernel": "python3",
             "cpu": 2,
             "memory": 8,
-            "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
+            "runtime_identifier": runtime_id,
         }
         print("Application data:")
         print(json.dumps(app_data, indent=2))
@@ -296,8 +313,13 @@ class CMLDeployer:
         
         project_id, _ = project_result
 
+        runtime_id = self.build_and_push_runtime(project_id)
+        if not runtime_id:
+            print("❌ Deployment failed: Could not build and push custom runtime.")
+            sys.exit(1)
+
         self.create_or_update_jobs(project_id)
-        self.create_application(project_id)
+        self.create_application(project_id, runtime_id)
         print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 
 def main():
