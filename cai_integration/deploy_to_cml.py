@@ -154,11 +154,16 @@ class CMLDeployer:
     ) -> Optional[str]:
         """Create a job in the CML project."""
         print(f"📄 Creating job: {job_config['name']}")
+        
+        script_path = job_config.get("script", "")
+        if not script_path.startswith("/"):
+            script_path = f"/home/cdsw/{script_path}"
+
         job_data = {
             "project_id": project_id,
             "name": job_config["name"],
             "type": "manual",
-            "script": job_config.get("script", ""),
+            "script": script_path,
             "arguments": job_config.get("arguments", ""),
             "kernel": job_config.get("kernel", "python3"),
             "cpu": job_config.get("cpu", 2),
