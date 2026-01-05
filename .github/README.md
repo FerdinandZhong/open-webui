@@ -5,19 +5,22 @@
 To enable automated deployment to Cloudera Machine Learning, configure the following secrets in your GitHub repository settings:
 
 ### 1. CML_HOST
+
 - **Description**: The base URL of your Cloudera Machine Learning workspace
 - **Example**: `https://ml.your-domain.cloudera.com`
 - **How to find**: Copy the URL from your browser when logged into CML (without trailing paths)
 
 ### 2. CML_API_KEY
+
 - **Description**: Your personal CML API key for authentication
 - **How to obtain**:
-  1. Log into your CML wo rkspace 
+  1. Log into your CML wo rkspace
   2. Go to User Settings → API Keys
   3. Click "Create API Key"
   4. Copy the generated key (save it securely, it won't be shown again)
 
 ### 3. GH_PAT (GitHub Personal Access Token)
+
 - **Description**: GitHub Personal Access Token for repository cloning in CML
 - **Required for**: Automatic repository cloning when creating CML projects
 - **How to create**:
@@ -43,11 +46,13 @@ To enable automated deployment to Cloudera Machine Learning, configure the follo
 ## Workflow Files
 
 ### `.github/workflows/ci.yml`
+
 - Runs on every push and pull request
 - Executes tests and linting
 - Validates code quality
 
 ### `.github/workflows/deploy-cml.yml`
+
 - Runs only on pushes to the main branch
 - Deploys to Cloudera Machine Learning
 - Creates/updates project and jobs
@@ -70,6 +75,7 @@ python test_run_jobs.py
 ## Deployment Process
 
 1. **Automatic Deployment** (Recommended)
+
    - Push code to the `main` branch
    - GitHub Actions will automatically:
      - Run tests and linting
@@ -85,16 +91,19 @@ python test_run_jobs.py
 ## Troubleshooting
 
 ### API Key Issues
+
 - Ensure your API key has necessary permissions
 - Check if the key hasn't expired
 - Verify the key is correctly copied (no extra spaces)
 
 ### Connection Issues
+
 - Verify CML_HOST URL is correct (https://, no trailing slash)
 - Check if you're behind a firewall or VPN
 - Ensure CML workspace is accessible from GitHub Actions
 
 ### Job Creation Failures
+
 - Check if you have permissions to create projects/jobs
 - Verify runtime configurations in `config/jobs_config.yaml`
 - Check CML resource quotas
@@ -102,6 +111,7 @@ python test_run_jobs.py
 ## Support
 
 For issues related to:
+
 - **GitHub Actions**: Check workflow logs in the Actions tab
 - **CML Integration**: Review CML documentation or contact your admin
 - **Code Issues**: Create an issue in this repository
