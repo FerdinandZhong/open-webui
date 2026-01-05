@@ -14,5 +14,5 @@ export PATH="${INSTALL_DIR}/${NODE_DIST}/bin:${PATH}"
 
 # --- Install frontend dependencies and build ---
 cd /home/cdsw
-npm install --force
-npm run build
+npm install --force > /home/cdsw/npm_install.log 2>&1
+npm run build > /home/cdsw/npm_build.log 2>&1
