@@ -58,7 +58,7 @@ def main():
     
     # Install dependencies
     print("\n📦 Installing dependencies...")
-    if not run_command("uv pip install -e ."):
+    if not run_command("uv pip install -e .", cwd="/home/cdsw/backend"):
         print("❌ Failed to install dependencies")
         sys.exit(1)
     
