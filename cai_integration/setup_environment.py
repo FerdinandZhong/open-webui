@@ -56,7 +56,7 @@ def main():
     
     # Create virtual environment with uv
     print("\n🐍 Creating virtual environment...")
-    if not run_command("uv venv"):
+    if not run_command("uv venv /home/cdsw/.venv"):
         print("❌ Failed to create virtual environment")
         sys.exit(1)
     
