@@ -33,6 +33,10 @@ def main():
     print("=" * 50)
     print("Setting up Python Environment with UV")
     print("=" * 50)
+
+    # List files in the project directory for debugging
+    print("\n📂 Listing files in the project directory...")
+    run_command("ls -lR /home/cdsw")
     
     # Change to project directory
     os.chdir("/home/cdsw/open-webui")
