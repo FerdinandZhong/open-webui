@@ -393,7 +393,7 @@ class CMLDeployer:
         # Import job configurations
         import yaml
 
-        config_path = "config/jobs_config.yaml"
+        config_path = "cai_integration/jobs_config.yaml"
 
         if not os.path.exists(config_path):
             print(f"❌ Config file not found: {config_path}")
@@ -454,7 +454,7 @@ class CMLDeployer:
         # Import job configurations
         import yaml
 
-        config_path = "config/jobs_config.yaml"
+        config_path = "cai_integration/jobs_config.yaml"
 
         if not os.path.exists(config_path):
             print(f"❌ Config file not found: {config_path}")

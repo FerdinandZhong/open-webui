@@ -19,7 +19,7 @@ jobs:
 
   create_env:
     name: Create Python Environment
-    script: scripts/setup_environment.py
+    script: cai_integration/setup_environment.py
     kernel: python3
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
     cpu: 1
@@ -30,7 +30,7 @@ jobs:
 
   run_merged_app:
     name: "Run Merged App"
-    script: "scripts/run_merged_app.py"
+    script: "cai_integration/run_merged_app.py"
     kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
     cpu: 2
