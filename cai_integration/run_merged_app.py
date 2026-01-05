@@ -59,7 +59,7 @@ def main():
     # Start the backend server
     print("\n--- Starting backend server ---")
     port = os.environ.get("CDSW_APP_PORT", "8080")
-    command = f"/home/cdsw/.venv/bin/uvicorn open_webui.main:app --host 0.0.0.0 --port {port}"
+    command = f"/home/cdsw/.venv/bin/python -m uvicorn open_webui.main:app --host 0.0.0.0 --port {port}"
     run_command(command, backend_dir)
 
 if __name__ == "__main__":
