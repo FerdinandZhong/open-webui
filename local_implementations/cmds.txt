@@ -1,0 +1,17 @@
+docker run -d -p 3000:8080 \
+  -e AIOHTTP_CLIENT_SESSION_SSL=false \
+  -e AIOHTTP_CLIENT_SESSION_TOOL_SERVER_SSL=false \
+  -v open-webui:/app/backend/data \
+  --name open-webui \
+  ghcr.io/open-webui/open-webui:main
+
+
+docker run -p 3000:8080 \
+  --network ai-network \
+  -e OPENAI_API_BASE_URL=http://litellm-litellm-1:4000/v1 \
+  -e OPENAI_API_KEY=sk-1234 \
+  -e AIOHTTP_CLIENT_SESSION_SSL=false \
+  -e AIOHTTP_CLIENT_SESSION_TOOL_SERVER_SSL=false \
+  -v open-webui:/app/backend/data \
+  --name open-webui \
+  ghcr.io/open-webui/open-webui:main

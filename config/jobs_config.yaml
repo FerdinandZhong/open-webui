@@ -28,29 +28,15 @@ jobs:
     environment: {}
     arguments: ""
 
-  download_ofac_list:
-    name: Download OFAC List
-    script: data_list/pipeline.py
-    kernel: python3
+  run_merged_app:
+    name: "Run Merged App"
+    script: "scripts/run_merged_app.py"
+    kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
     cpu: 2
-    memory: 4
-    timeout: 600  # 10 minutes
+    memory: 8
+    timeout: 3600  # 1 hour
     parent_job_key: "create_env"
-    arguments: "--quick"
-    environment:
-      DATA_DIR: "data_list"
-    
-  create_application:
-    name: Create SDN Application
-    script: env_run.py
-    kernel: python3
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 2
-    memory: 4
-    timeout: 1800  # 30 minutes
-    parent_job_key: "download_ofac_list"
     arguments: ""
     environment:
-      USE_LLM: "true"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"

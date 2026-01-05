@@ -18,7 +18,7 @@ class CMLDeployer:
         """Initialize CML REST API client."""
         self.cml_host = os.environ.get("CML_HOST")
         self.api_key = os.environ.get("CML_API_KEY")
-        self.project_name = "sdn-screening"  # Fixed name - git sync will update code
+        self.project_name = "open-webui"  # Fixed name - git sync will update code
 
         if not all([self.cml_host, self.api_key]):
             print("Error: Missing required environment variables")
@@ -175,7 +175,7 @@ class CMLDeployer:
 
         project_data = {
             "name": self.project_name,
-            "description": "SDN Screening System - OFAC sanctions compliance tool with AI-powered matching",
+            "description": "Open-WebUI: User-friendly WebUI for LLMs",
             "visibility": "private",
             "template": "git",
         }
@@ -649,18 +649,9 @@ class CMLDeployer:
                         )
 
                         if env_completed:
-                            # Step 5: OFAC data download job will be triggered automatically by CML
-                            # due to parent_job_key dependency
-                            if "download_ofac_list" in remaining_jobs:
-                                print(
-                                    "ℹ️  OFAC data download job configured - CML will trigger it automatically after environment setup"
-                                )
-                                if "deploy_api" in remaining_jobs:
-                                    print("ℹ️  API deployment job configured - will run after data download")
-                                if "deploy_ui" in remaining_jobs:
-                                    print("ℹ️  UI deployment job configured - will run after data download")
-                            else:
-                                print("⚠️  OFAC data download job not found")
+                            print("✅ Environment setup completed successfully")
+                            # If there are other jobs that depend on the environment, they can be triggered here.
+                            # For now, we just print a success message.
                         else:
                             print("❌ Environment setup did not complete successfully")
                             print("💡 You may need to manually run the jobs in CML UI")
