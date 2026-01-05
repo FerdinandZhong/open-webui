@@ -286,6 +286,38 @@ class CMLDeployer:
         else:
             print("❌ Failed to send application creation/update request.")
 
+    def trigger_job(self, project_id: str, job_id: str) -> Optional[str]:
+        """Trigger a job to run."""
+        print(f"▶️  Triggering job with ID: {job_id}")
+        result = self.make_request("POST", f"projects/{project_id}/jobs/{job_id}/runs")
+        if result and result.get("id"):
+            run_id = result["id"]
+            print(f"✅ Job run created with ID: {run_id}")
+            return run_id
+        else:
+            print("❌ Failed to trigger job.")
+            return None
+
+    def wait_for_job_completion(self, project_id: str, job_id: str, run_id: str, timeout_seconds: int = 600) -> bool:
+        """Wait for a job run to complete."""
+        print(f"⏳ Waiting for job run {run_id} to complete...")
+        import time
+        start_time = time.time()
+        while time.time() - start_time < timeout_seconds:
+            status_result = self.make_request("GET", f"projects/{project_id}/jobs/{job_id}/runs/{run_id}")
+            if status_result:
+                status = status_result.get("status")
+                print(f"   Current status: {status}")
+                if status in ["succeeded", "success"]:
+                    print("✅ Job completed successfully.")
+                    return True
+                elif status in ["failed", "error"]:
+                    print("❌ Job failed.")
+                    return False
+            time.sleep(10)
+        print("⏰ Timed out waiting for job to complete.")
+        return False
+
     def deploy(self):
         """Main deployment process."""
         print("\n🏁 Starting CML Deployment Process 🏁")
@@ -297,7 +329,22 @@ class CMLDeployer:
         project_id, _ = project_result
 
         self.create_or_update_jobs(project_id)
-        self.create_application(project_id)
+        
+        jobs = self.list_jobs(project_id)
+        env_job_id = jobs.get("Create Python Environment")
+
+        if env_job_id:
+            run_id = self.trigger_job(project_id, env_job_id)
+            if run_id:
+                if self.wait_for_job_completion(project_id, env_job_id, run_id):
+                    self.create_application(project_id)
+                else:
+                    print("❌ Environment setup job failed. Application not created.")
+            else:
+                print("❌ Failed to trigger environment setup job.")
+        else:
+            print("⚠️  'Create Python Environment' job not found. Cannot create application.")
+
         print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 
 def main():
