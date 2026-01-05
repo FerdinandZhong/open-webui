@@ -40,15 +40,13 @@ This script will perform the following actions:
 - Create a new CML project named `open-webui`.
 - Set up the jobs defined in `cai_integration/jobs_config.yaml`.
 
-### Step 2: Trigger Job in CML
+### Step 2: Trigger Jobs in CML
 
-After the deployment script has successfully completed, navigate to the `open-webui` project in your CML workspace. You will see one new job. You need to run it:
-
-1.  **Create Python Environment**: This job installs all the necessary Python dependencies for the backend. Manually trigger this job and wait for it to complete successfully.
+After the deployment script has successfully completed, navigate to the `open-webui` project in your CML workspace. The deployment script will automatically trigger the necessary jobs. You can monitor the progress of the jobs in the "Jobs" tab.
 
 ### Step 3: Access Open-WebUI
 
-Once the `Create Python Environment` job has completed, navigate to the "Applications" tab in your CML project. You will find the "Open-WebUI" application. Click on it to access the application.
+Once the `Build Frontend` job has completed, navigate to the "Applications" tab in your CML project. You will find the "Open-WebUI" application. Click on it to access the application.
 
 ## CML Jobs and Application Description
 
@@ -57,8 +55,14 @@ Once the `Create Python Environment` job has completed, navigate to the "Applica
 - **Script**: `cai_integration/setup_environment.py`
 - **Description**: This job creates a persistent virtual environment at `/home/cdsw/.venv` and installs all the Python dependencies defined in `backend/pyproject.toml`.
 
-### 2. Open-WebUI (Application)
+### 2. Build Frontend (Job)
+
+- **Script**: `cai_integration/build_frontend.sh`
+- **Description**: This job installs the frontend dependencies and builds the frontend.
+- **Depends On**: `Create Python Environment`
+
+### 3. Open-WebUI (Application)
 
 - **Script**: `cai_integration/run_merged_app.py`
 - **Description**: This application activates the virtual environment created by the `Create Python Environment` job and then starts the backend server on the port specified by the `$CDSW_APP_PORT` environment variable.
-- **Depends On**: The `Create Python Environment` job must be run successfully at least once before starting this application.
+- **Depends On**: The `Build Frontend` job must be run successfully at least once before starting this application.

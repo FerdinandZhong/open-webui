@@ -337,18 +337,26 @@ class CMLDeployer:
         
         jobs = self.list_jobs(project_id)
         env_job_id = jobs.get("Create Python Environment")
+        build_job_id = jobs.get("Build Frontend")
 
-        if env_job_id:
-            run_id = self.trigger_job(project_id, env_job_id)
-            if run_id:
-                if self.wait_for_job_completion(project_id, env_job_id, run_id):
-                    self.create_application(project_id)
+        if env_job_id and build_job_id:
+            env_run_id = self.trigger_job(project_id, env_job_id)
+            if env_run_id:
+                if self.wait_for_job_completion(project_id, env_job_id, env_run_id):
+                    build_run_id = self.trigger_job(project_id, build_job_id)
+                    if build_run_id:
+                        if self.wait_for_job_completion(project_id, build_job_id, build_run_id):
+                            self.create_application(project_id)
+                        else:
+                            print("❌ Frontend build job failed. Application not created.")
+                    else:
+                        print("❌ Failed to trigger frontend build job.")
                 else:
                     print("❌ Environment setup job failed. Application not created.")
             else:
                 print("❌ Failed to trigger environment setup job.")
         else:
-            print("⚠️  'Create Python Environment' job not found. Cannot create application.")
+            print("⚠️  Required jobs not found. Cannot create application.")
 
         print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 
