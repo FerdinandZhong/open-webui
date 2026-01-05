@@ -16,17 +16,22 @@ class CMLDeployer:
 
     def __init__(self):
         """Initialize CML REST API client."""
+        print("🚀 Initializing CML Deployer...")
         self.cml_host = os.environ.get("CML_HOST")
         self.api_key = os.environ.get("CML_API_KEY")
         self.project_name = "open-webui"  # Fixed name - git sync will update code
 
+        print(f"CML Host: {self.cml_host}")
+        print(f"Project Name: {self.project_name}")
+
         if not all([self.cml_host, self.api_key]):
-            print("Error: Missing required environment variables")
+            print("❌ Error: Missing required environment variables")
             print("Required: CML_HOST, CML_API_KEY")
             sys.exit(1)
 
         # Setup API base URL and headers - Use v2 API with Bearer token (confirmed working)
         self.api_url = f"{self.cml_host.rstrip('/')}/api/v2"
+        print(f"API URL: {self.api_url}")
 
         # Use Bearer token authentication (confirmed working with your CML instance)
         self.headers = {
@@ -34,12 +39,18 @@ class CMLDeployer:
             "Accept": "application/json",
             "Authorization": f"Bearer {self.api_key.strip()}",
         }
+        print("✅ CML Deployer initialized successfully.")
 
     def make_request(
         self, method: str, endpoint: str, data: Dict = None, files: Dict = None, params: Dict = None
     ) -> Optional[Dict]:
         """Make an API request to CML."""
         url = f"{self.api_url}/{endpoint.lstrip('/')}"
+        print(f"➡️  {method} {url}")
+        if params:
+            print(f"   Params: {params}")
+        if data:
+            print(f"   Data: {json.dumps(data, indent=2)}")
 
         try:
             headers = self.headers.copy()
@@ -56,21 +67,29 @@ class CMLDeployer:
                 params=params,
             )
 
+            print(f"⬅️  Response: {response.status_code}")
+            if response.text:
+                print(f"   Response Body: {response.text[:500]}...")
+
             if 200 <= response.status_code < 300:
                 if response.text:
                     try:
                         return response.json()
                     except json.JSONDecodeError:
+                        print("⚠️  Could not decode JSON from response.")
                         return {}
                 return {}
             else:
+                print(f"❌ API Request Failed: {response.status_code}")
                 return None
 
         except Exception as e:
+            print(f"❌ An error occurred during the API request: {e}")
             return None
 
     def search_projects(self, project_name: str) -> Optional[str]:
         """Search for a project by name using the search API."""
+        print(f"🔍 Searching for project: {project_name}")
         search_filter = f'{{"name":"{project_name}"}}'
 
         result = self.make_request(
@@ -82,17 +101,22 @@ class CMLDeployer:
             for project in projects:
                 if project.get("name") == project_name:
                     project_id = project.get("id")
+                    print(f"✅ Found existing project with ID: {project_id}")
                     return project_id
+            print("ℹ️  No existing project found.")
             return None
         else:
+            print("❌ Failed to search for projects.")
             return None
 
     def get_or_create_project(self) -> Optional[tuple[str, bool]]:
         """Get existing project or create a new one."""
+        print("\n--- Getting or Creating Project ---")
         project_id = self.search_projects(self.project_name)
         if project_id:
             return project_id, False
 
+        print(f"📦 Creating new project: {self.project_name}")
         project_data = {
             "name": self.project_name,
             "description": "Open-WebUI: User-friendly WebUI for LLMs",
@@ -106,22 +130,30 @@ class CMLDeployer:
         if github_token:
             github_repo = os.environ.get("GITHUB_REPOSITORY", "")
             if github_repo:
+                print(f"🔗 Configuring Git repository: {github_repo}")
                 git_url = f"https://{github_token}@github.com/{github_repo}.git"
                 project_data["git_url"] = git_url
                 has_git_url = True
+            else:
+                print("⚠️  GITHUB_REPOSITORY environment variable not set. Cannot configure Git repository.")
+        else:
+            print("⚠️  GH_PAT or GITHUB_TOKEN not found. Cannot configure Git repository.")
 
         result = self.make_request("POST", "projects", data=project_data)
 
         if result:
             project_id = result.get("id")
+            print(f"✅ Successfully created project with ID: {project_id}")
             return project_id, has_git_url
         else:
+            print("❌ Failed to create project.")
             return None
 
     def create_job(
         self, project_id: str, job_config: Dict[str, Any], parent_job_id: Optional[str] = None
     ) -> Optional[str]:
         """Create a job in the CML project."""
+        print(f"📄 Creating job: {job_config['name']}")
         job_data = {
             "project_id": project_id,
             "name": job_config["name"],
@@ -139,17 +171,21 @@ class CMLDeployer:
 
         if parent_job_id:
             job_data["parent_job_id"] = parent_job_id
+            print(f"   Parent Job ID: {parent_job_id}")
 
         result = self.make_request("POST", f"projects/{project_id}/jobs", data=job_data)
 
         if result:
             job_id = result.get("id")
+            print(f"✅ Successfully created job with ID: {job_id}")
             return job_id
         else:
+            print(f"❌ Failed to create job: {job_config['name']}")
             return None
 
     def update_job(self, project_id: str, job_id: str, job_config: Dict[str, Any]) -> bool:
         """Update an existing job in the CML project."""
+        print(f"🔄 Updating job: {job_config['name']} (ID: {job_id})")
         environment = job_config.get("environment", {})
         environment_json = json.dumps(environment) if environment else ""
 
@@ -168,32 +204,44 @@ class CMLDeployer:
 
         result = self.make_request("PATCH", f"projects/{project_id}/jobs/{job_id}", data=job_data)
 
-        return result is not None
+        if result is not None:
+            print(f"✅ Successfully updated job: {job_config['name']}")
+            return True
+        else:
+            print(f"❌ Failed to update job: {job_config['name']}")
+            return False
 
     def list_jobs(self, project_id: str) -> Dict[str, str]:
         """List all jobs in a project."""
+        print("📋 Listing existing jobs...")
         result = self.make_request("GET", f"projects/{project_id}/jobs")
 
         if result:
             jobs = {}
             for job in result.get("jobs", []):
                 jobs[job.get("name", "")] = job.get("id", "")
+            print(f"Found {len(jobs)} jobs.")
             return jobs
+        print("❌ Failed to list jobs.")
         return {}
 
     def create_or_update_jobs(self, project_id: str) -> None:
         """Create or update all jobs from the config file."""
+        print("\n--- Creating or Updating Jobs ---")
         import yaml
 
         config_path = "cai_integration/jobs_config.yaml"
+        print(f"Loading job configurations from: {config_path}")
 
         if not os.path.exists(config_path):
+            print(f"⚠️  Job config file not found at: {config_path}")
             return
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
         jobs_config = config.get("jobs", {})
+        print(f"Found {len(jobs_config)} job configurations.")
         existing_jobs = self.list_jobs(project_id)
         processed_jobs = {}
 
@@ -218,28 +266,39 @@ class CMLDeployer:
 
     def create_application(self, project_id: str) -> None:
         """Create a CML application."""
+        print("\n--- Creating Application ---")
         app_data = {
             "name": "Open-WebUI",
             "project_id": project_id,
-            "subdomain": f"open-webui-{project_id}",
+            "subdomain": f"open-webui-{project_id.lower()}",
             "script": "cai_integration/run_merged_app.py",
             "kernel": "python3",
             "cpu": 2,
             "memory": 8,
             "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
         }
-        self.make_request("POST", "applications", data=app_data)
+        print("Application data:")
+        print(json.dumps(app_data, indent=2))
+        
+        result = self.make_request("POST", "applications", data=app_data)
+        if result is not None:
+            print("✅ Application creation/update request sent successfully.")
+        else:
+            print("❌ Failed to send application creation/update request.")
 
     def deploy(self):
         """Main deployment process."""
+        print("\n🏁 Starting CML Deployment Process 🏁")
         project_result = self.get_or_create_project()
         if not project_result:
+            print("❌ Deployment failed: Could not get or create project.")
             sys.exit(1)
         
         project_id, _ = project_result
 
         self.create_or_update_jobs(project_id)
         self.create_application(project_id)
+        print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 
 def main():
     """Main execution function."""
