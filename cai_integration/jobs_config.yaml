@@ -28,15 +28,4 @@ jobs:
     environment: {}
     arguments: ""
 
-  run_merged_app:
-    name: "Run Merged App"
-    script: "cai_integration/run_merged_app.py"
-    kernel: "python3"
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 2
-    memory: 8
-    timeout: 3600  # 1 hour
-    parent_job_key: "create_env"
-    arguments: ""
-    environment:
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+
