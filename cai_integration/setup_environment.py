@@ -39,7 +39,7 @@ def main():
     run_command("ls -lR /home/cdsw")
     
     # Change to project directory
-    os.chdir("/home/cdsw/open-webui")
+    os.chdir("/home/cdsw")
     print(f"Working directory: {os.getcwd()}")
     
     # Install uv first
