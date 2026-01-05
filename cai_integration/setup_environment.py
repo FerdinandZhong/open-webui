@@ -56,9 +56,13 @@ def main():
     
     # Create virtual environment with uv
     print("\n🐍 Creating virtual environment...")
-    if not run_command("uv venv /home/cdsw/.venv"):
-        print("❌ Failed to create virtual environment")
-        sys.exit(1)
+    venv_dir = "/home/cdsw/.venv"
+    if os.path.exists(venv_dir):
+        print(f"Virtual environment already exists at: {venv_dir}")
+    else:
+        if not run_command(f"uv venv {venv_dir}"):
+            print("❌ Failed to create virtual environment")
+            sys.exit(1)
     
     # Install dependencies
     print("\n📦 Installing dependencies...")
