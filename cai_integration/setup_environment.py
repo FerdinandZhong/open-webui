@@ -33,6 +33,10 @@ def main():
     print("=" * 50)
     print("Setting up Python Environment with UV")
     print("=" * 50)
+
+    # List files in the project directory for debugging
+    print("\n📂 Listing files in the project directory...")
+    run_command("ls -lR /home/cdsw")
     
     # Change to project directory
     os.chdir("/home/cdsw")
@@ -58,7 +62,8 @@ def main():
     
     # Install dependencies
     print("\n📦 Installing dependencies...")
-    if not run_command("uv pip install -e ."):
+    backend_dir = os.path.join(os.getcwd(), "backend")
+    if not run_command("uv pip install -e .", cwd=backend_dir):
         print("❌ Failed to install dependencies")
         sys.exit(1)
     

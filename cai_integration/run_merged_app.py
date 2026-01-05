@@ -41,20 +41,21 @@ def main():
     frontend_dir = "."  # Assuming frontend is at the root
 
     # Install backend dependencies
-    print("--- Installing backend dependencies ---")
+    print("-- Installing backend dependencies --")
     run_command("pip install -r requirements.txt", backend_dir)
 
     # Install frontend dependencies
-    print("\n--- Installing frontend dependencies ---")
+    print("\n-- Installing frontend dependencies --")
     run_command("npm install", frontend_dir)
 
     # Build frontend
-    print("\n--- Building frontend ---")
+    print("\n-- Building frontend --")
     run_command("npm run build", frontend_dir)
 
     # Start the backend server
     print("\n--- Starting backend server ---")
-    run_command("python -m open_webui.main", backend_dir)
+    port = os.environ.get("CDSW_APP_PORT", "8080")
+    run_command(f"uvicorn open_webui.main:app --host 0.0.0.0 --port {port}", backend_dir)
 
 if __name__ == "__main__":
     main()
