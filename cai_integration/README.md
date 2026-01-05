@@ -55,13 +55,10 @@ Once the `Create Python Environment` job has completed, navigate to the "Applica
 ### 1. Create Python Environment (Job)
 
 - **Script**: `cai_integration/setup_environment.py`
-- **Description**: This job installs all the Python dependencies defined in `backend/requirements.txt` using `uv`.
+- **Description**: This job creates a persistent virtual environment at `/home/cdsw/.venv` and installs all the Python dependencies defined in `backend/pyproject.toml`.
 
 ### 2. Open-WebUI (Application)
 
 - **Script**: `cai_integration/run_merged_app.py`
-- **Description**: This application performs the following steps:
-  1.  Installs frontend dependencies using `npm install`.
-  2.  Builds the frontend using `npm run build`.
-  3.  Starts the backend server on the port specified by the `$CDSW_APP_PORT` environment variable.
+- **Description**: This application activates the virtual environment created by the `Create Python Environment` job and then starts the backend server on the port specified by the `$CDSW_APP_PORT` environment variable.
 - **Depends On**: The `Create Python Environment` job must be run successfully at least once before starting this application.
