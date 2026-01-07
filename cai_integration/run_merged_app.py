@@ -37,31 +37,12 @@ def run_command(command, working_dir):
 
 def main():
     """Main function to setup and run the application."""
-    cai_integration_dir = "/home/cdsw/cai_integration"
     backend_dir = "/home/cdsw/backend"
-    frontend_dir = "/home/cdsw"
-
-    # Install npm
-    print("\n--- Installing Node.js and npm ---")
-    run_command(f"bash {cai_integration_dir}/install_npm.sh", cai_integration_dir)
-
-    # Add npm to PATH
-    os.environ["PATH"] = f"/home/cdsw/npm/node-v22.4.1-linux-x64/bin:{os.environ['PATH']}"
-
-    # Install frontend dependencies
-    print("\n-- Installing frontend dependencies --")
-    run_command("npm install --force", frontend_dir)
-
-    # Build frontend
-    print("\n-- Building frontend --")
-    run_command("npm run build", frontend_dir)
-
-    # Activate virtual environment
-    activate_script = "/home/cdsw/.venv/bin/activate"
-    command = f"source {activate_script} && uvicorn open_webui.main:app --host 0.0.0.0 --port {os.environ.get('CDSW_APP_PORT', '8080')}"
 
     # Start the backend server
     print("\n--- Starting backend server ---")
+    port = os.environ.get("CDSW_APP_PORT", "8090")
+    command = f"/home/cdsw/.venv/bin/python -m uvicorn open_webui.main:app --host 127.0.0.1 --port {port}"
     run_command(command, backend_dir)
 
 if __name__ == "__main__":

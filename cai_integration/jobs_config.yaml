@@ -28,4 +28,16 @@ jobs:
     environment: {}
     arguments: ""
 
+  build_frontend:
+    name: "Build Frontend"
+    script: "cai_integration/build_frontend.sh"
+    kernel: "bash"
+    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
+    cpu: 2
+    memory: 8
+    timeout: 1800  # 30 minutes
+    parent_job_key: "create_env"
+    arguments: ""
+    environment: {}
+
 

@@ -154,11 +154,16 @@ class CMLDeployer:
     ) -> Optional[str]:
         """Create a job in the CML project."""
         print(f"📄 Creating job: {job_config['name']}")
+        
+        script_path = job_config.get("script", "")
+        if not script_path.startswith("/"):
+            script_path = f"/home/cdsw/{script_path}"
+
         job_data = {
             "project_id": project_id,
             "name": job_config["name"],
             "type": "manual",
-            "script": job_config.get("script", ""),
+            "script": script_path,
             "arguments": job_config.get("arguments", ""),
             "kernel": job_config.get("kernel", "python3"),
             "cpu": job_config.get("cpu", 2),
@@ -273,9 +278,10 @@ class CMLDeployer:
             "subdomain": f"open-webui-{project_id.lower()}",
             "script": "cai_integration/run_merged_app.py",
             "kernel": "python3",
-            "cpu": 2,
-            "memory": 8,
+            "cpu": 8,
+            "memory": 64,
             "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
+            "bypass_authentication": True,
         }
         print("Application data:")
         print(json.dumps(app_data, indent=2))
@@ -332,18 +338,26 @@ class CMLDeployer:
         
         jobs = self.list_jobs(project_id)
         env_job_id = jobs.get("Create Python Environment")
+        build_job_id = jobs.get("Build Frontend")
 
-        if env_job_id:
-            run_id = self.trigger_job(project_id, env_job_id)
-            if run_id:
-                if self.wait_for_job_completion(project_id, env_job_id, run_id):
-                    self.create_application(project_id)
+        if env_job_id and build_job_id:
+            env_run_id = self.trigger_job(project_id, env_job_id)
+            if env_run_id:
+                if self.wait_for_job_completion(project_id, env_job_id, env_run_id):
+                    build_run_id = self.trigger_job(project_id, build_job_id)
+                    if build_run_id:
+                        if self.wait_for_job_completion(project_id, build_job_id, build_run_id):
+                            self.create_application(project_id)
+                        else:
+                            print("❌ Frontend build job failed. Application not created.")
+                    else:
+                        print("❌ Failed to trigger frontend build job.")
                 else:
                     print("❌ Environment setup job failed. Application not created.")
             else:
                 print("❌ Failed to trigger environment setup job.")
         else:
-            print("⚠️  'Create Python Environment' job not found. Cannot create application.")
+            print("⚠️  Required jobs not found. Cannot create application.")
 
         print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 
