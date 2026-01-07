@@ -4,18 +4,18 @@
 
 jobs:
   # Git sync job to update repository code
-  git_sync:
-    name: "Git Repository Sync"
-    script: ".git_sync.py"
-    arguments: ""
-    kernel: "python3"
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 1
-    memory: 2
-    gpu: 0
-    timeout: 300
-    environment:
-      GITHUB_TOKEN: "${GITHUB_TOKEN}"  # Will be replaced at runtime
+  # git_sync:
+  #   name: "Git Repository Sync"
+  #   script: ".git_sync.py"
+  #   arguments: ""
+  #   kernel: "python3"
+  #   runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
+  #   cpu: 1
+  #   memory: 2
+  #   gpu: 0
+  #   timeout: 300
+  #   environment:
+  #     GITHUB_TOKEN: "${GITHUB_TOKEN}"  # Will be replaced at runtime
 
   create_env:
     name: Create Python Environment
@@ -30,8 +30,8 @@ jobs:
 
   build_frontend:
     name: "Build Frontend"
-    script: "cai_integration/build_frontend.sh"
-    kernel: "bash"
+    script: "cai_integration/build_frontend.py"
+    kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
     cpu: 2
     memory: 8
