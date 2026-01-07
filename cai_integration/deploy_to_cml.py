@@ -281,6 +281,7 @@ class CMLDeployer:
             "cpu": 8,
             "memory": 64,
             "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
+            "bypass_authentication": True,
         }
         print("Application data:")
         print(json.dumps(app_data, indent=2))

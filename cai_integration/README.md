@@ -48,6 +48,27 @@ After the deployment script has successfully completed, navigate to the `open-we
 
 Once the `Build Frontend` job has completed, navigate to the "Applications" tab in your CML project. You will find the "Open-WebUI" application. Click on it to access the application.
 
+## GitHub Actions Deployment
+
+The deployment process is automated using GitHub Actions. The workflow is defined in `.github/workflows/deploy-cml.yml` and is triggered on every push to the `main` branch.
+
+### Required GitHub Secrets
+
+To enable the GitHub Actions deployment, you must configure the following secrets in your GitHub repository:
+
+| Secret Name | Description |
+| :--- | :--- |
+| `CML_HOST` | The URL of your Cloudera Machine Learning workspace (e.g., `https://cml.example.com`). |
+| `CML_API_KEY` | Your CML API key, which can be generated from your CML user settings. |
+| `GH_PAT` | A GitHub Personal Access Token with `repo` scope. This is used by CML to authenticate and clone the private repository. |
+| `OPENAI_API_KEY` | (Optional) Your OpenAI API key if you want to use OpenAI models within the Open-WebUI application. |
+
+The workflow performs the following steps:
+1.  Check out the repository code.
+2.  Set up a Python 3.11 environment.
+3.  Install necessary deployment dependencies (`requests`, `pyyaml`).
+4.  Run the `cai_integration/deploy_to_cml.py` script with the configured secrets.
+
 ## CML Jobs and Application Description
 
 ### 1. Create Python Environment (Job)
