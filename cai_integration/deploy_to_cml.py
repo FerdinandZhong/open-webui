@@ -230,7 +230,7 @@ class CMLDeployer:
         print("❌ Failed to list jobs.")
         return {}
 
-    def wait_for_git_clone(self, project_id: str, timeout_seconds: int = 300) -> bool:
+    def wait_for_git_clone(self, project_id: str, timeout_seconds: int = 900) -> bool:
         """
         Wait for the git repository to be cloned before creating jobs.
 
@@ -239,41 +239,48 @@ class CMLDeployer:
 
         Args:
             project_id: The CML project ID
-            timeout_seconds: Maximum time to wait (default 5 minutes)
+            timeout_seconds: Maximum time to wait (default 15 minutes)
 
         Returns:
             True if git clone completed, False if timeout
         """
         import time
-        print("\n⏳ Waiting for git repository to be cloned...")
+        print("\n⏳ Waiting for git repository to be cloned (timeout: {0}s)...".format(timeout_seconds))
         start_time = time.time()
-        max_attempts = 30
+        poll_interval = 5  # Poll every 5 seconds
         attempt = 0
 
-        while attempt < max_attempts and (time.time() - start_time) < timeout_seconds:
+        while (time.time() - start_time) < timeout_seconds:
             attempt += 1
             elapsed = int(time.time() - start_time)
 
             # Check project status
             result = self.make_request("GET", f"projects/{project_id}")
             if result:
-                # Check if we can list files in the project (indicates clone is done)
-                # For now, we'll do a simple check - if the project is ready, proceed
-                # In a real scenario, you might check for specific files
                 status = result.get("creation_status", "unknown")
                 print(f"   [{elapsed}s] Project status: {status}")
 
-                # If status is 'success' or ready, proceed
-                if status in ["success", "ready", "running"]:
-                    print("✅ Git repository appears to be ready")
+                # Status progression: unknown -> creating -> success/ready/running
+                # Only proceed when status moves past "creating"
+                if status in ["success", "ready"]:
+                    print("✅ Git repository clone completed successfully")
                     return True
+                elif status == "running":
+                    print("✅ Git repository is ready (project running)")
+                    return True
+                elif status == "error":
+                    print("❌ Error during git clone")
+                    return False
+                # Continue waiting if status is "unknown" or "creating"
 
-            if attempt < max_attempts:
-                wait_time = min(10, timeout_seconds - elapsed)
-                if wait_time > 0:
-                    time.sleep(wait_time)
+            # Wait before next poll
+            remaining = timeout_seconds - elapsed
+            if remaining > 0:
+                wait_time = min(poll_interval, remaining)
+                time.sleep(wait_time)
 
-        print("⏰ Timeout waiting for git repository to be cloned")
+        elapsed = int(time.time() - start_time)
+        print(f"⏰ Timeout waiting for git repository to be cloned ({elapsed}s elapsed)")
         return False
 
     def create_or_update_jobs(self, project_id: str) -> None:
@@ -382,9 +389,14 @@ class CMLDeployer:
 
         # Wait for git repository to be cloned if project was just created with git template
         if has_git_url:
-            if not self.wait_for_git_clone(project_id):
-                print("⚠️  Warning: Git clone may not have completed, but proceeding with job creation...")
-                # Continue anyway - sometimes status is not accurately reported
+            # Wait up to 15 minutes (900 seconds) for git clone to complete
+            clone_success = self.wait_for_git_clone(project_id, timeout_seconds=900)
+            if not clone_success:
+                print("⚠️  Warning: Git clone may not have completed within 15 minutes.")
+                print("   The project may still be initializing. Waiting an additional 30 seconds...")
+                import time
+                time.sleep(30)
+                print("   Proceeding with job creation...")
 
         self.create_or_update_jobs(project_id)
         
