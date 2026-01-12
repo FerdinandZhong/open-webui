@@ -30,8 +30,8 @@ jobs:
 
   build_frontend:
     name: "Build Frontend"
-    script: "cai_integration/build_frontend.sh"
-    kernel: "bash"
+    script: "cai_integration/build_frontend.py"
+    kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
     cpu: 2
     memory: 8

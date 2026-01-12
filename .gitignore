@@ -16,6 +16,10 @@ __pycache__/
 *$py.class
 .nvmrc
 CLAUDE.md
+
+# Custom pipelines (keep private)
+pipelines/custom/*.py
+
 # C extensions
 *.so
 
