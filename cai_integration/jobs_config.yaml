@@ -6,6 +6,7 @@ jobs:
   # Git sync job - runs first (no parent)
   # Keeps repository in sync with remote changes
   # This job runs immediately after project creation (git repository is already cloned by CML)
+  # NOTE: Uses RELATIVE path (CML expects relative paths, not absolute /home/cdsw/ paths)
   git_sync:
     name: "Git Repository Sync"
     script: ".git_sync.py"
@@ -21,6 +22,7 @@ jobs:
 
   # Environment setup job - runs after git sync completes
   # Creates Python virtual environment and installs dependencies
+  # NOTE: Uses RELATIVE path (CML expects relative paths, not absolute /home/cdsw/ paths)
   create_env:
     name: Create Python Environment
     script: cai_integration/setup_environment.py
@@ -35,6 +37,7 @@ jobs:
 
   # Frontend build job - runs after environment setup completes
   # Builds the frontend assets for Open-WebUI
+  # NOTE: Uses RELATIVE path (CML expects relative paths, not absolute /home/cdsw/ paths)
   build_frontend:
     name: "Build Frontend"
     script: "cai_integration/build_frontend.py"
