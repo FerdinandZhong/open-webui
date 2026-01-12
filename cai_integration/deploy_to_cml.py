@@ -361,6 +361,28 @@ class CMLDeployer:
                     return run_id
         return None
 
+    def job_succeeded_recently(self, project_id: str, job_id: str) -> bool:
+        """
+        Check if a job has already run successfully.
+
+        Returns True if the most recent job run succeeded, False otherwise.
+        This is used for idempotency - skipping redundant job runs.
+        """
+        result = self.make_request("GET", f"projects/{project_id}/jobs/{job_id}/runs")
+
+        if not result or not result.get("runs"):
+            return False  # No runs yet
+
+        # Get first (most recent) run
+        latest_run = result.get("runs", [])[0]
+        status = latest_run.get("status", "")
+
+        # Check if most recent run succeeded
+        if status in ["succeeded", "success", "ENGINE_SUCCEEDED"]:
+            return True
+
+        return False
+
     def trigger_job(self, project_id: str, job_id: str) -> Optional[str]:
         """Trigger a job to run, or return existing active run if one exists."""
         # Check if there's already an active run
@@ -442,27 +464,45 @@ class CMLDeployer:
             time.sleep(15)
 
         self.create_or_update_jobs(project_id)
-        
+
         jobs = self.list_jobs(project_id)
         env_job_id = jobs.get("Create Python Environment")
         build_job_id = jobs.get("Build Frontend")
 
         if env_job_id and build_job_id:
-            env_run_id = self.trigger_job(project_id, env_job_id)
-            if env_run_id:
-                if self.wait_for_job_completion(project_id, env_job_id, env_run_id):
-                    build_run_id = self.trigger_job(project_id, build_job_id)
-                    if build_run_id:
-                        if self.wait_for_job_completion(project_id, build_job_id, build_run_id):
-                            self.create_application(project_id)
-                        else:
-                            print("❌ Frontend build job failed. Application not created.")
-                    else:
-                        print("❌ Failed to trigger frontend build job.")
-                else:
-                    print("❌ Environment setup job failed. Application not created.")
+            # Check if we should force rebuild
+            force_rebuild = os.environ.get("FORCE_REBUILD", "false").lower() == "true"
+
+            # Environment setup - skip if already successful and not forcing rebuild
+            if not force_rebuild and self.job_succeeded_recently(project_id, env_job_id):
+                print("\n✅ Environment already setup successfully, skipping")
+                env_run_id = None
             else:
-                print("❌ Failed to trigger environment setup job.")
+                print("\n--- Setting up Python Environment ---")
+                env_run_id = self.trigger_job(project_id, env_job_id)
+
+            if env_run_id:
+                if not self.wait_for_job_completion(project_id, env_job_id, env_run_id):
+                    print("❌ Environment setup job failed. Application not created.")
+                    return
+            # If env_run_id is None (skipped), continue anyway since it already succeeded
+
+            # Frontend build - skip if already successful and not forcing rebuild
+            if not force_rebuild and self.job_succeeded_recently(project_id, build_job_id):
+                print("\n✅ Frontend already built successfully, skipping")
+                build_run_id = None
+            else:
+                print("\n--- Building Frontend ---")
+                build_run_id = self.trigger_job(project_id, build_job_id)
+
+            if build_run_id:
+                if not self.wait_for_job_completion(project_id, build_job_id, build_run_id):
+                    print("❌ Frontend build job failed. Application not created.")
+                    return
+            # If build_run_id is None (skipped), continue anyway since it already succeeded
+
+            # Create application
+            self.create_application(project_id)
         else:
             print("⚠️  Required jobs not found. Cannot create application.")
 
