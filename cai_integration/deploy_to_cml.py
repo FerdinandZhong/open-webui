@@ -230,6 +230,52 @@ class CMLDeployer:
         print("❌ Failed to list jobs.")
         return {}
 
+    def wait_for_git_clone(self, project_id: str, timeout_seconds: int = 300) -> bool:
+        """
+        Wait for the git repository to be cloned before creating jobs.
+
+        CML clones git repositories asynchronously, so we need to wait
+        until the files are available before creating jobs that reference them.
+
+        Args:
+            project_id: The CML project ID
+            timeout_seconds: Maximum time to wait (default 5 minutes)
+
+        Returns:
+            True if git clone completed, False if timeout
+        """
+        import time
+        print("\n⏳ Waiting for git repository to be cloned...")
+        start_time = time.time()
+        max_attempts = 30
+        attempt = 0
+
+        while attempt < max_attempts and (time.time() - start_time) < timeout_seconds:
+            attempt += 1
+            elapsed = int(time.time() - start_time)
+
+            # Check project status
+            result = self.make_request("GET", f"projects/{project_id}")
+            if result:
+                # Check if we can list files in the project (indicates clone is done)
+                # For now, we'll do a simple check - if the project is ready, proceed
+                # In a real scenario, you might check for specific files
+                status = result.get("creation_status", "unknown")
+                print(f"   [{elapsed}s] Project status: {status}")
+
+                # If status is 'success' or ready, proceed
+                if status in ["success", "ready", "running"]:
+                    print("✅ Git repository appears to be ready")
+                    return True
+
+            if attempt < max_attempts:
+                wait_time = min(10, timeout_seconds - elapsed)
+                if wait_time > 0:
+                    time.sleep(wait_time)
+
+        print("⏰ Timeout waiting for git repository to be cloned")
+        return False
+
     def create_or_update_jobs(self, project_id: str) -> None:
         """Create or update all jobs from the config file."""
         print("\n--- Creating or Updating Jobs ---")
@@ -331,8 +377,14 @@ class CMLDeployer:
         if not project_result:
             print("❌ Deployment failed: Could not get or create project.")
             sys.exit(1)
-        
-        project_id, _ = project_result
+
+        project_id, has_git_url = project_result
+
+        # Wait for git repository to be cloned if project was just created with git template
+        if has_git_url:
+            if not self.wait_for_git_clone(project_id):
+                print("⚠️  Warning: Git clone may not have completed, but proceeding with job creation...")
+                # Continue anyway - sometimes status is not accurately reported
 
         self.create_or_update_jobs(project_id)
         
