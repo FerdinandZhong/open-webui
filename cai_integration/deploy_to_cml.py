@@ -247,7 +247,7 @@ class CMLDeployer:
         import time
         print("\n⏳ Waiting for git repository to be cloned (timeout: {0}s)...".format(timeout_seconds))
         start_time = time.time()
-        poll_interval = 5  # Poll every 5 seconds
+        poll_interval = 10  # Poll every 10 seconds
         attempt = 0
 
         while (time.time() - start_time) < timeout_seconds:
@@ -261,17 +261,19 @@ class CMLDeployer:
                 print(f"   [{elapsed}s] Project status: {status}")
 
                 # Status progression: unknown -> creating -> success/ready/running
-                # Only proceed when status moves past "creating"
-                if status in ["success", "ready"]:
-                    print("✅ Git repository clone completed successfully")
-                    return True
-                elif status == "running":
-                    print("✅ Git repository is ready (project running)")
-                    return True
+                # Continue waiting if status is "unknown" or "creating"
+                if status in ["unknown", "creating"]:
+                    print(f"        Still initializing...")
                 elif status == "error":
                     print("❌ Error during git clone")
                     return False
-                # Continue waiting if status is "unknown" or "creating"
+                elif status in ["success", "ready", "running"]:
+                    # Project is ready, but we need extra time for files to be written to disk
+                    print("✅ Project status indicates clone is complete")
+                    print("   Waiting 30 seconds for files to be available on disk...")
+                    time.sleep(30)
+                    print("✅ Git repository clone should be complete")
+                    return True
 
             # Wait before next poll
             remaining = timeout_seconds - elapsed
@@ -329,9 +331,9 @@ class CMLDeployer:
             "name": "Open-WebUI",
             "project_id": project_id,
             "subdomain": f"open-webui-{project_id.lower()}",
-            "script": "cai_integration/run_merged_app.py",
+            "script": "/home/cdsw/cai_integration/run_merged_app.py",
             "kernel": "python3",
-            "cpu": 8,
+            "cpu": 16,
             "memory": 64,
             "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
             "bypass_authentication": True,
@@ -389,14 +391,9 @@ class CMLDeployer:
 
         # Wait for git repository to be cloned if project was just created with git template
         if has_git_url:
-            # Wait up to 15 minutes (900 seconds) for git clone to complete
-            clone_success = self.wait_for_git_clone(project_id, timeout_seconds=900)
-            if not clone_success:
-                print("⚠️  Warning: Git clone may not have completed within 15 minutes.")
-                print("   The project may still be initializing. Waiting an additional 30 seconds...")
-                import time
-                time.sleep(30)
-                print("   Proceeding with job creation...")
+            import time
+            print("\n⏱️  Waiting 15 seconds for Git clone to complete...")
+            time.sleep(15)
 
         self.create_or_update_jobs(project_id)
         

@@ -3,44 +3,47 @@
 # Contains all job definitions and their parameters
 
 jobs:
-  # Environment setup job - runs first
-  create_env:
-    name: Create Python Environment
-    script: cai_integration/setup_environment.py
-    kernel: python3
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 1
-    memory: 2
-    timeout: 1800  # 30 minutes
-    environment: {}
-    arguments: ""
-
-  # Git sync job - runs after environment is set up
+  # Git sync job - runs first (no parent)
   # Keeps repository in sync with remote changes
+  # This job runs immediately after project creation (git repository is already cloned by CML)
   git_sync:
     name: "Git Repository Sync"
     script: ".git_sync.py"
     arguments: ""
     kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 1
-    memory: 2
+    cpu: 4
+    memory: 16
     gpu: 0
     timeout: 300
-    parent_job_key: "create_env"
     environment:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"  # Will be replaced at runtime
 
-  # Frontend build job - runs after git sync
+  # Environment setup job - runs after git sync completes
+  # Creates Python virtual environment and installs dependencies
+  create_env:
+    name: Create Python Environment
+    script: cai_integration/setup_environment.py
+    kernel: python3
+    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
+    cpu: 4
+    memory: 16
+    timeout: 1800  # 30 minutes
+    parent_job_key: "git_sync"
+    environment: {}
+    arguments: ""
+
+  # Frontend build job - runs after environment setup completes
+  # Builds the frontend assets for Open-WebUI
   build_frontend:
     name: "Build Frontend"
     script: "cai_integration/build_frontend.py"
     kernel: "python3"
     runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
-    cpu: 2
-    memory: 8
+    cpu: 4
+    memory: 16
     timeout: 1800  # 30 minutes
-    parent_job_key: "git_sync"
+    parent_job_key: "create_env"
     arguments: ""
     environment: {}
 
