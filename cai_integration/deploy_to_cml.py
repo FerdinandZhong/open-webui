@@ -154,10 +154,10 @@ class CMLDeployer:
     ) -> Optional[str]:
         """Create a job in the CML project."""
         print(f"📄 Creating job: {job_config['name']}")
-        
+
+        # CML requires RELATIVE script paths (not /home/cdsw/ absolute paths)
+        # Pass script path as-is from config
         script_path = job_config.get("script", "")
-        if not script_path.startswith("/"):
-            script_path = f"/home/cdsw/{script_path}"
 
         job_data = {
             "project_id": project_id,
@@ -359,24 +359,50 @@ class CMLDeployer:
             print("❌ Failed to trigger job.")
             return None
 
-    def wait_for_job_completion(self, project_id: str, job_id: str, run_id: str, timeout_seconds: int = 600) -> bool:
-        """Wait for a job run to complete."""
-        print(f"⏳ Waiting for job run {run_id} to complete...")
+    def wait_for_job_completion(self, project_id: str, job_id: str, run_id: str, timeout_seconds: int = 3600) -> bool:
+        """Wait for a job run to complete.
+
+        Args:
+            project_id: The CML project ID
+            job_id: The job ID to monitor
+            run_id: The specific run ID to check
+            timeout_seconds: Maximum time to wait (default 1 hour = 3600s)
+
+        Returns:
+            True if job succeeded, False if failed or timeout
+        """
+        print(f"⏳ Waiting for job run {run_id} to complete (timeout: {timeout_seconds}s)...")
         import time
         start_time = time.time()
+        last_status = None
+
         while time.time() - start_time < timeout_seconds:
             status_result = self.make_request("GET", f"projects/{project_id}/jobs/{job_id}/runs/{run_id}")
             if status_result:
-                status = status_result.get("status")
-                print(f"   Current status: {status}")
-                if status in ["succeeded", "success"]:
+                status = status_result.get("status", "unknown")
+                # Only print status if it changed
+                if status != last_status:
+                    elapsed = int(time.time() - start_time)
+                    print(f"   [{elapsed}s] Current status: {status}")
+                    last_status = status
+
+                # Check for terminal states (CML uses ENGINE_SUCCEEDED, ENGINE_FAILED, etc.)
+                if status in ["succeeded", "success", "ENGINE_SUCCEEDED"]:
                     print("✅ Job completed successfully.")
                     return True
-                elif status in ["failed", "error"]:
+                elif status in ["failed", "error", "ENGINE_FAILED"]:
                     print("❌ Job failed.")
                     return False
-            time.sleep(10)
-        print("⏰ Timed out waiting for job to complete.")
+
+            elapsed = int(time.time() - start_time)
+            remaining = timeout_seconds - elapsed
+            if remaining > 0:
+                # Sleep for 10 seconds or remaining time, whichever is shorter
+                wait_time = min(10, remaining)
+                time.sleep(wait_time)
+
+        elapsed = int(time.time() - start_time)
+        print(f"⏰ Timed out waiting for job to complete ({elapsed}s elapsed)")
         return False
 
     def deploy(self):
