@@ -347,8 +347,28 @@ class CMLDeployer:
         else:
             print("❌ Failed to send application creation/update request.")
 
+    def get_active_job_run(self, project_id: str, job_id: str) -> Optional[str]:
+        """Check if a job already has an active run and return its ID."""
+        result = self.make_request("GET", f"projects/{project_id}/jobs/{job_id}/runs")
+        if result:
+            runs = result.get("runs", [])
+            for run in runs:
+                status = run.get("status", "")
+                # Check for active/running statuses
+                if status in ["queued", "running", "ENGINE_QUEUED", "ENGINE_RUNNING"]:
+                    run_id = run.get("id")
+                    print(f"ℹ️  Found active run for job {job_id}: {run_id} (status: {status})")
+                    return run_id
+        return None
+
     def trigger_job(self, project_id: str, job_id: str) -> Optional[str]:
-        """Trigger a job to run."""
+        """Trigger a job to run, or return existing active run if one exists."""
+        # Check if there's already an active run
+        active_run_id = self.get_active_job_run(project_id, job_id)
+        if active_run_id:
+            print(f"✅ Using existing active run: {active_run_id}")
+            return active_run_id
+
         print(f"▶️  Triggering job with ID: {job_id}")
         result = self.make_request("POST", f"projects/{project_id}/jobs/{job_id}/runs")
         if result and result.get("id"):
