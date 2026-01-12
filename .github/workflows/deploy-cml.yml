@@ -1,8 +1,17 @@
 name: Deploy to CML
 
 on:
+  # Automatic trigger: when code is pushed to main branch
   push:
     branches: [main]
+
+  # Manual trigger: allows running the workflow from GitHub UI
+  workflow_dispatch:
+    inputs:
+      deployment_reason:
+        description: "Reason for manual deployment"
+        required: false
+        default: "Manual deployment"
 
 jobs:
   deploy-to-cml:
@@ -30,6 +39,10 @@ jobs:
           python cai_integration/deploy_to_cml.py
       
       - name: Deployment Status
-        if : always()
+        if: always()
         run: |
           echo "Deployment workflow completed."
+          echo "Triggered by: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Deployment reason: ${{ github.event.inputs.deployment_reason }}"
+          fi
