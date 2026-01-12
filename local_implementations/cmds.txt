@@ -15,3 +15,12 @@ docker run -p 3000:8080 \
   -v open-webui:/app/backend/data \
   --name open-webui \
   ghcr.io/open-webui/open-webui:main
+
+
+docker run -p 3000:8080 \
+  --network ai-network \
+  -e OPENAI_API_BASE_URL=https://ai-gateway.dev.cloudops.cloudera.com/ \
+  -e OPENAI_API_KEY=sk-Njp-nPJ1eK8sbit1YzlhiA \
+  -v open-webui:/app/backend/data \
+  --name open-webui \
+  ghcr.io/open-webui/open-webui:main
