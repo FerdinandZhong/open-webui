@@ -326,7 +326,7 @@ class Pipe:
         return trace_id
 
     def _poll_events(self, trace_id: str) -> Generator[str, None, None]:
-        """Poll for workflow events with exponential backoff and improved error detection"""
+        """Poll for workflow events with exponential backoff and real-time streaming"""
         start_time = time.time()
         seen_timestamps = set()
         poll_interval = self.valves.POLL_INTERVAL
@@ -336,7 +336,7 @@ class Pipe:
             # Check overall timeout
             elapsed = time.time() - start_time
             if elapsed > self.valves.OVERALL_TIMEOUT:
-                yield f"\n\n🛑 **Timeout:** Workflow exceeded {self.valves.OVERALL_TIMEOUT}s limit."
+                yield f"\n\n🛑 **Timeout:** Workflow exceeded {self.valves.OVERALL_TIMEOUT}s limit.\n"
                 break
 
             try:
@@ -352,8 +352,10 @@ class Pipe:
 
                     if not events:
                         consecutive_empty_polls += 1
-                        # Exponential backoff for empty polls
+                        # Show heartbeat only after some time with no events
                         if consecutive_empty_polls > 2:
+                            elapsed = int(time.time() - start_time)
+                            yield f"⏳ Polling... ({elapsed}s elapsed, waiting for workflow events)\n"
                             poll_interval = min(
                                 poll_interval * 1.2,
                                 self.valves.MAX_POLL_INTERVAL
@@ -379,40 +381,56 @@ class Pipe:
                             # Check for failure events FIRST (before checking for content)
                             if event_type in ["crew_kickoff_failed", "workflow_failed", "error"]:
                                 error_msg = event.get("error", "Unknown error")
-                                yield f"\n\n❌ **Workflow Failed**\n"
-                                yield f"**Event Type:** {event_type}\n"
-                                yield f"**Timestamp:** {timestamp}\n"
-                                yield f"**Error:** {error_msg}\n"
+                                yield f"\n\n🔔 **EVENT: {event_type.upper()}**\n"
+                                yield f"⏰ **Timestamp:** {timestamp}\n"
+                                yield f"❌ **Error:** {error_msg}\n"
 
                                 # Include metadata/details if available - format like local_test.py
                                 if "metadata" in event:
                                     metadata = event.get("metadata")
                                     if isinstance(metadata, dict):
-                                        yield f"**Details:**\n```json\n{json.dumps(metadata, indent=2)}\n```\n"
+                                        yield f"📋 **Details:**\n```json\n{json.dumps(metadata, indent=2)}\n```\n"
 
                                 logger.error(f"Workflow failed: {event_type} - {error_msg}")
                                 return
 
-                            # Output content from successful events
+                            # Stream all events with metadata (not just content)
+                            yield f"\n🔔 **EVENT: {event_type.upper()}**\n"
+                            yield f"⏰ **Timestamp:** {timestamp}\n"
+
+                            # Output content if available
                             if content:
-                                yield f"\n{content}\n"
+                                yield f"📝 **Output:**\n{content}\n"
+                            else:
+                                # Show metadata for non-content events (task started, task completed, etc)
+                                clean_event = {k: v for k, v in event.items() if k not in ['response', 'output', 'outout', 'timestamp', 'type']}
+                                if clean_event:
+                                    yield f"ℹ️ **Metadata:** {json.dumps(clean_event, indent=2)}\n"
+
+                            yield "---\n"
 
                             # Check for completion
                             if event_type == "crew_kickoff_completed":
-                                yield f"\n\n✅ **Workflow completed successfully**"
+                                yield f"\n🏁 **WORKFLOW COMPLETED SUCCESSFULLY**\n"
                                 return
 
                 elif response.status_code >= 500:
                     # Server error - continue polling
+                    elapsed = int(time.time() - start_time)
+                    yield f"⚠️ Server error (HTTP {response.status_code}), retrying... ({elapsed}s elapsed)\n"
                     logger.warning(f"Server error during polling: {response.status_code}")
                 else:
                     # Client error - stop polling
-                    yield f"\n\n❌ **Polling error:** HTTP {response.status_code}"
+                    yield f"\n❌ **Polling error:** HTTP {response.status_code}\n"
                     break
 
             except requests.exceptions.Timeout:
+                elapsed = int(time.time() - start_time)
+                yield f"⚠️ Request timeout, retrying... ({elapsed}s elapsed)\n"
                 logger.warning("Polling request timed out, continuing...")
             except Exception as e:
+                elapsed = int(time.time() - start_time)
+                yield f"⚠️ Polling error: {str(e)} ({elapsed}s elapsed)\n"
                 logger.warning(f"Polling error: {str(e)}")
 
             # Sleep before next poll
