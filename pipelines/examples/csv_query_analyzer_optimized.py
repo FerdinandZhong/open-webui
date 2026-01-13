@@ -36,7 +36,7 @@ class Pipe:
             description="The ID of your Cloudera Workflow",
         )
         MODEL_ENDPOINT: str = Field(
-            default="https://workflow-db40e298-aeaa-4580-8e38-938758f22053.ml-dbfc64d1-783.go01-dem.ylcu-atmi.cloudera.site",
+            default="https://workflow-6f56e8c5-e60a-4800-adef-2cb9e69ce7f6.ml-dbfc64d1-783.go01-dem.ylcu-atmi.cloudera.site",
             description="The base URL of your CML workflow",
         )
         CDSW_APIV2_KEY: str = Field(
@@ -326,7 +326,7 @@ class Pipe:
         return trace_id
 
     def _poll_events(self, trace_id: str) -> Generator[str, None, None]:
-        """Poll for workflow events with exponential backoff"""
+        """Poll for workflow events with exponential backoff and improved error detection"""
         start_time = time.time()
         seen_timestamps = set()
         poll_interval = self.valves.POLL_INTERVAL
@@ -376,17 +376,30 @@ class Pipe:
                                 ""
                             )
 
+                            # Check for failure events FIRST (before checking for content)
+                            if event_type in ["crew_kickoff_failed", "workflow_failed", "error"]:
+                                error_msg = event.get("error", "Unknown error")
+                                yield f"\n\n❌ **Workflow Failed**\n"
+                                yield f"**Event Type:** {event_type}\n"
+                                yield f"**Timestamp:** {timestamp}\n"
+                                yield f"**Error:** {error_msg}\n"
+
+                                # Include metadata/details if available - format like local_test.py
+                                if "metadata" in event:
+                                    metadata = event.get("metadata")
+                                    if isinstance(metadata, dict):
+                                        yield f"**Details:**\n```json\n{json.dumps(metadata, indent=2)}\n```\n"
+
+                                logger.error(f"Workflow failed: {event_type} - {error_msg}")
+                                return
+
+                            # Output content from successful events
                             if content:
                                 yield f"\n{content}\n"
 
                             # Check for completion
                             if event_type == "crew_kickoff_completed":
                                 yield f"\n\n✅ **Workflow completed successfully**"
-                                return
-
-                            if event_type and "error" in event_type.lower():
-                                error_msg = event.get("message", "Unknown error")
-                                yield f"\n\n❌ **Workflow error:** {error_msg}"
                                 return
 
                 elif response.status_code >= 500:
@@ -418,63 +431,68 @@ class Pipe:
         """
         def stream_workflow() -> Generator[str, None, None]:
             try:
+                # 0. Start banner
+                yield "---\n"
+                yield "🏁 **CSV Query Analyzer - Cloudera Workflow Integration**\n\n"
+
                 # 1. Validate configuration
                 is_valid, error_msg = self._validate_config()
                 if not is_valid:
-                    yield f"❌ **Configuration Error:** {error_msg}\n"
+                    yield f"[-] ❌ **Configuration Error:** {error_msg}\n"
                     yield "Please configure the pipeline in Admin Settings → Pipelines."
                     return
 
                 # 2. Extract user message
                 messages = body.get("messages", [])
                 if not messages:
-                    yield "❌ **Error:** No messages found in request."
+                    yield "[-] ❌ **Error:** No messages found in request."
                     return
 
                 user_message = messages[-1].get("content", "").strip()
                 if not user_message:
-                    yield "❌ **Error:** Empty message. Please provide a query."
+                    yield "[-] ❌ **Error:** Empty message. Please provide a query."
                     return
 
                 # 3. Resolve and load file
-                yield "📂 **Resolving file...**\n"
+                yield "[*] 📂 **Step 1: Resolving file...**\n"
                 try:
                     filename, file_bytes = self._resolve_file(body, __files__)
-                    yield f"✅ Found: `{filename}` ({len(file_bytes) / 1024:.1f} KB)\n\n"
+                    file_size_kb = len(file_bytes) / 1024
+                    yield f"[+] ✅ Found: `{filename}` ({file_size_kb:.1f} KB)\n\n"
                 except Exception as e:
-                    yield f"❌ **File Error:** {str(e)}\n"
+                    yield f"[-] ❌ **File Error:** {str(e)}\n"
                     return
 
                 # 4. Create session
-                yield "🔄 **Initializing CML Session...**\n"
+                yield "[*] 🔄 **Step 2: Initializing CML Session...**\n"
                 try:
                     session_id = self._create_session()
-                    yield f"✅ Session created: `{session_id[:8]}...`\n\n"
+                    yield f"[+] ✅ Session created: `{session_id[:8]}...`\n\n"
                 except Exception as e:
-                    yield f"❌ **Session Error:** {str(e)}\n"
+                    yield f"[-] ❌ **Session Error:** {str(e)}\n"
                     return
 
                 # 5. Upload file
-                yield f"📤 **Uploading {filename}...**\n"
+                yield f"[*] 📤 **Step 3: Uploading {filename}...**\n"
                 try:
                     self._upload_file(session_id, filename, file_bytes)
-                    yield f"✅ Upload complete\n\n"
+                    yield f"[+] ✅ Upload complete\n\n"
                 except Exception as e:
-                    yield f"❌ **Upload Error:** {str(e)}\n"
+                    yield f"[-] ❌ **Upload Error:** {str(e)}\n"
                     return
 
                 # 6. Start workflow
-                yield "🚀 **Starting Workflow Analysis...**\n"
+                yield "[*] 🚀 **Step 4: Starting Workflow Analysis...**\n"
                 try:
                     trace_id = self._kickoff_workflow(session_id, filename, user_message)
-                    yield f"✅ Workflow initiated: `{trace_id[:8]}...`\n\n"
-                    yield "---\n\n"
+                    yield f"[+] ✅ Workflow initiated: `{trace_id[:8]}...`\n\n"
+                    yield "--------------------------------------------------\n\n"
                 except Exception as e:
-                    yield f"❌ **Kickoff Error:** {str(e)}\n"
+                    yield f"[-] ❌ **Kickoff Error:** {str(e)}\n"
                     return
 
                 # 7. Stream results
-                yield "📊 **Analysis Results:**\n\n"
+                yield "[*] 📊 **Step 5: Monitoring Workflow Events (Verbose Mode)...**\n\n"
                 yield from self._poll_events(trace_id)
 
             except Exception as e:
