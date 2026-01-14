@@ -8,21 +8,50 @@ This directory contains scripts and documentation for local testing of CML conne
 # 1. Navigate to this directory
 cd cai_integration/local_test
 
-# 2. Set your credentials
+# 2. Check your environment setup
+./check_env.sh
+
+# 3. Set your credentials (if not already set)
+export CML_HOST="https://your-cml-instance.cloudera.site"
 export CML_API_KEY="your_actual_api_key"
 
-# 3. Run the connection test
-python test_cml_connection.py
+# 4. Run the project creation test
+python test_project_creation.py
 
-# 4. From the output, get your PROJECT_ID
+# 5. For verbose debugging
+VERBOSE=true python test_project_creation.py
+```
 
-# 5. Test job creation
-python test_job_creation.py <PROJECT_ID>
+### Troubleshooting Setup
+
+If the test fails with authentication or connection errors:
+
+```bash
+# See detailed error output
+VERBOSE=true python test_project_creation.py
+
+# Or run the diagnostic script
+./check_env.sh
 ```
 
 ## What's Included
 
+### Diagnostic Tools
+
+- **`check_env.sh`** - Quick environment diagnostic script
+  - Checks if required environment variables are set
+  - Tests network connectivity to CML host
+  - Shows setup instructions if anything is missing
+  - Run this first if tests are failing
+
 ### Python Test Scripts
+
+- **`test_project_creation.py`** - Tests project creation workflow (NEW)
+  - Tests API connectivity
+  - Searches for existing projects
+  - Creates new project if needed
+  - Verifies project details
+  - Includes verbose logging with `VERBOSE=true`
 
 - **`test_cml_connection.py`** - Tests basic CML connectivity
   - Verifies API authentication
@@ -126,6 +155,36 @@ Based on testing with adfr/ai-screening reference and your CML instance:
 **Conclusion:** CML expects RELATIVE paths, not absolute `/home/cdsw/` paths.
 
 ## Troubleshooting
+
+### Local Test Fails But GitHub Actions Works
+
+**Common Causes:**
+
+1. **Missing Environment Variables**
+   - GitHub Actions has `CML_HOST`, `CML_API_KEY` in secrets
+   - Your local shell doesn't have them set
+   - **Solution:** Run `./check_env.sh` to see what's missing
+
+2. **Network/Firewall Issues**
+   - Your local machine can't reach CML host (VPN, firewall)
+   - GitHub runner can reach it (different network)
+   - **Solution:** Test with `./check_env.sh` - it checks connectivity
+
+3. **API Key Expired**
+   - Local session using old/expired key
+   - GitHub Actions has fresh key from secrets
+   - **Solution:** Generate new API key in CML UI
+
+4. **Hardcoded Values in Code**
+   - Script might have default CML_HOST that works in Actions
+   - Local machine tries to use different host
+   - **Solution:** Check deploy_to_cml.py for hardcoded values, use env vars
+
+**Quick Debug:**
+```bash
+./check_env.sh
+VERBOSE=true python test_project_creation.py
+```
 
 ### "Script not found" Error
 
