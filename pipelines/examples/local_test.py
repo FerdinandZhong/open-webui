@@ -99,7 +99,7 @@ def run_test():
         payload = {
             "inputs": {
                 "Attachments": json.dumps([filename]),  # Must be a stringified list
-                "question": "analyze the csv to find the lowest temperature",
+                "Task": "analyze the csv to find the lowest temperature",
                 "session_id": session_id
             }
         }
