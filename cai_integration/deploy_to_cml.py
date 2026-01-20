@@ -325,17 +325,12 @@ class CMLDeployer:
                     processed_jobs[job_key] = job_id
 
                     # Trigger Git Repository Sync job immediately after creation
-                    # This ensures files are available for dependent jobs
+                    # Dependent jobs (those with parent_job_id) will auto-trigger after this completes
                     if job_key == "git_sync":
-                        print(f"\n⏱️  Triggering Git Repository Sync job immediately...")
+                        print(f"\n▶️  Triggering Git Repository Sync job immediately...")
                         run_id = self.trigger_job(project_id, job_id)
                         if run_id:
-                            print(f"⏳ Waiting for Git Repository Sync to complete...")
-                            if self.wait_for_job_completion(project_id, job_id, run_id):
-                                print(f"✅ Git Repository Sync completed successfully")
-                            else:
-                                print(f"❌ Git Repository Sync failed or timed out")
-                                return
+                            print(f"✅ Git Repository Sync queued for execution")
                         else:
                             print(f"⚠️  Could not trigger Git Repository Sync job")
 
@@ -476,46 +471,17 @@ class CMLDeployer:
         # No need to wait here - the git sync job will ensure files are available
         self.create_or_update_jobs(project_id)
 
-        jobs = self.list_jobs(project_id)
-        env_job_id = jobs.get("Create Python Environment")
-        build_job_id = jobs.get("Build Frontend")
+        # Jobs with parent_job_id will be triggered automatically by CML
+        # when their parent job completes successfully.
+        # No manual triggering needed - just create the application.
 
-        if env_job_id and build_job_id:
-            # Check if we should force rebuild
-            force_rebuild = os.environ.get("FORCE_REBUILD", "false").lower() == "true"
+        print("\n--- Jobs Created Successfully ---")
+        print("✅ Git Repository Sync will run first")
+        print("✅ Create Python Environment will run automatically after Git Sync completes")
+        print("✅ Build Frontend will run automatically after Environment setup completes")
 
-            # Environment setup - skip if already successful and not forcing rebuild
-            if not force_rebuild and self.job_succeeded_recently(project_id, env_job_id):
-                print("\n✅ Environment already setup successfully, skipping")
-                env_run_id = None
-            else:
-                print("\n--- Setting up Python Environment ---")
-                env_run_id = self.trigger_job(project_id, env_job_id)
-
-            if env_run_id:
-                if not self.wait_for_job_completion(project_id, env_job_id, env_run_id):
-                    print("❌ Environment setup job failed. Application not created.")
-                    return
-            # If env_run_id is None (skipped), continue anyway since it already succeeded
-
-            # Frontend build - skip if already successful and not forcing rebuild
-            if not force_rebuild and self.job_succeeded_recently(project_id, build_job_id):
-                print("\n✅ Frontend already built successfully, skipping")
-                build_run_id = None
-            else:
-                print("\n--- Building Frontend ---")
-                build_run_id = self.trigger_job(project_id, build_job_id)
-
-            if build_run_id:
-                if not self.wait_for_job_completion(project_id, build_job_id, build_run_id):
-                    print("❌ Frontend build job failed. Application not created.")
-                    return
-            # If build_run_id is None (skipped), continue anyway since it already succeeded
-
-            # Create application
-            self.create_application(project_id)
-        else:
-            print("⚠️  Required jobs not found. Cannot create application.")
+        # Create application
+        self.create_application(project_id)
 
         print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 
