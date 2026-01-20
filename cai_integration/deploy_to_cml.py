@@ -307,7 +307,7 @@ class CMLDeployer:
 
         for job_key, job_config in jobs_config.items():
             job_name = job_config["name"]
-            
+
             parent_job_id = None
             if "parent_job_key" in job_config:
                 parent_key = job_config["parent_job_key"]
@@ -323,6 +323,21 @@ class CMLDeployer:
                 job_id = self.create_job(project_id, job_config, parent_job_id)
                 if job_id:
                     processed_jobs[job_key] = job_id
+
+                    # Trigger Git Repository Sync job immediately after creation
+                    # This ensures files are available for dependent jobs
+                    if job_key == "git_sync":
+                        print(f"\n⏱️  Triggering Git Repository Sync job immediately...")
+                        run_id = self.trigger_job(project_id, job_id)
+                        if run_id:
+                            print(f"⏳ Waiting for Git Repository Sync to complete...")
+                            if self.wait_for_job_completion(project_id, job_id, run_id):
+                                print(f"✅ Git Repository Sync completed successfully")
+                            else:
+                                print(f"❌ Git Repository Sync failed or timed out")
+                                return
+                        else:
+                            print(f"⚠️  Could not trigger Git Repository Sync job")
 
     def create_application(self, project_id: str) -> None:
         """Create a CML application."""
@@ -455,14 +470,10 @@ class CMLDeployer:
             print("❌ Deployment failed: Could not get or create project.")
             sys.exit(1)
 
-        project_id, has_git_url = project_result
+        project_id, _ = project_result
 
-        # Wait for git repository to be cloned if project was just created with git template
-        if has_git_url:
-            import time
-            print("\n⏱️  Waiting 15 seconds for Git clone to complete...")
-            time.sleep(15)
-
+        # Note: Git sync will be triggered immediately after job creation
+        # No need to wait here - the git sync job will ensure files are available
         self.create_or_update_jobs(project_id)
 
         jobs = self.list_jobs(project_id)
