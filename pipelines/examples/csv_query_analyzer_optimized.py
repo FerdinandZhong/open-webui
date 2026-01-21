@@ -332,9 +332,9 @@ class Pipe:
         poll_interval = self.valves.POLL_INTERVAL
         consecutive_empty_polls = 0
 
-        # Track sections that have been opened
-        thinking_section_opened = False
-        results_section_opened = False
+        # Track if we've shown section headers
+        thinking_header_shown = False
+        results_header_shown = False
 
         while True:
             # Check overall timeout
@@ -397,22 +397,18 @@ class Pipe:
                                 logger.error(f"Workflow failed: {event_type} - {error_msg}")
                                 return
 
-                            # Stream thinking/procedure content immediately in collapsible section
+                            # Stream thinking/procedure content with header
                             if content and event_type in ["task_started", "task_running", "agent_thinking"]:
-                                if not thinking_section_opened:
-                                    yield "\n\n<details>\n"
-                                    yield "<summary>🔍 <b>Workflow Procedure & Thinking</b> (click to expand)</summary>\n\n"
-                                    thinking_section_opened = True
-                                yield f"**{event_type}**: {content}\n\n"
+                                if not thinking_header_shown:
+                                    yield "\n\n### 🔍 Workflow Procedure\n\n"
+                                    thinking_header_shown = True
+                                yield f"- **{event_type}**: {content}\n"
 
-                            # Stream output content immediately
+                            # Stream output content with header
                             elif content and event_type in ["task_completed", "task_output"]:
-                                if not results_section_opened:
-                                    # Close thinking section if open
-                                    if thinking_section_opened:
-                                        yield "</details>\n\n"
-                                    yield "## 📊 Analysis Results\n\n"
-                                    results_section_opened = True
+                                if not results_header_shown:
+                                    yield "\n\n## 📊 Analysis Results\n\n"
+                                    results_header_shown = True
                                 yield f"{content}\n\n"
 
                             # Show progress indicator for events without content
@@ -421,14 +417,10 @@ class Pipe:
 
                             # Check for completion
                             if event_type == "crew_kickoff_completed":
-                                # Close any open sections
-                                if thinking_section_opened and not results_section_opened:
-                                    yield "</details>\n\n"
-
                                 # If there's completion content, show it
                                 if content:
-                                    if not results_section_opened:
-                                        yield "## 📊 Analysis Results\n\n"
+                                    if not results_header_shown:
+                                        yield "\n\n## 📊 Analysis Results\n\n"
                                     yield f"{content}\n\n"
 
                                 yield "\n✅ **Workflow completed successfully**\n"
@@ -481,59 +473,46 @@ class Pipe:
                     return
 
                 yield "# 📊 CSV Query Analyzer\n\n"
-                yield "🔄 Initializing workflow...\n\n"
-
-                # Collect setup steps for collapsible section
-                setup_steps = []
 
                 # 3. Resolve and load file
+                yield "🔄 Loading file..."
                 try:
                     filename, file_bytes = self._resolve_file(body, __files__)
                     file_size_kb = len(file_bytes) / 1024
-                    setup_steps.append(f"✅ Found file: **{filename}** ({file_size_kb:.1f} KB)")
-                    yield "."
+                    yield f" ✅ {filename} ({file_size_kb:.1f} KB)\n"
                 except Exception as e:
-                    yield f"\n\n❌ **File Error**: {str(e)}\n"
+                    yield f"\n❌ **File Error**: {str(e)}\n"
                     return
 
                 # 4. Create session
+                yield "🔄 Creating session..."
                 try:
                     session_id = self._create_session()
-                    setup_steps.append(f"✅ Created CML session: `{session_id[:8]}...`")
-                    yield "."
+                    yield f" ✅ {session_id[:8]}...\n"
                 except Exception as e:
-                    yield f"\n\n❌ **Session Error**: {str(e)}\n"
+                    yield f"\n❌ **Session Error**: {str(e)}\n"
                     return
 
                 # 5. Upload file
+                yield "🔄 Uploading file..."
                 try:
                     self._upload_file(session_id, filename, file_bytes)
-                    setup_steps.append(f"✅ Uploaded file to session")
-                    yield "."
+                    yield f" ✅\n"
                 except Exception as e:
-                    yield f"\n\n❌ **Upload Error**: {str(e)}\n"
+                    yield f"\n❌ **Upload Error**: {str(e)}\n"
                     return
 
                 # 6. Start workflow
+                yield "🔄 Starting workflow..."
                 try:
                     trace_id = self._kickoff_workflow(session_id, filename, user_message)
-                    setup_steps.append(f"✅ Started workflow: `{trace_id[:8]}...`")
-                    yield "."
+                    yield f" ✅ {trace_id[:8]}...\n"
                 except Exception as e:
-                    yield f"\n\n❌ **Kickoff Error**: {str(e)}\n"
+                    yield f"\n❌ **Kickoff Error**: {str(e)}\n"
                     return
 
-                yield "\n\n"
-
-                # Show setup in collapsible block
-                yield "<details>\n"
-                yield "<summary>⚙️ <b>Setup Steps</b> (click to expand)</summary>\n\n"
-                for step in setup_steps:
-                    yield f"{step}\n\n"
-                yield "</details>\n\n"
-
                 # 7. Stream events
-                yield "🔍 **Analyzing your data**...\n\n"
+                yield "\n🔍 **Analyzing your data**...\n"
                 yield from self._poll_events(trace_id)
 
             except Exception as e:
