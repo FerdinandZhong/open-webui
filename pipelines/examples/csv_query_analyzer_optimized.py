@@ -331,14 +331,16 @@ class Pipe:
         seen_timestamps = set()
         poll_interval = self.valves.POLL_INTERVAL
         consecutive_empty_polls = 0
-        thinking_content = []
-        output_content = []
+
+        # Track sections that have been opened
+        thinking_section_opened = False
+        results_section_opened = False
 
         while True:
             # Check overall timeout
             elapsed = time.time() - start_time
             if elapsed > self.valves.OVERALL_TIMEOUT:
-                yield f"[!] Timeout after {int(elapsed)}s\n"
+                yield f"\n\n⏰ Timeout after {int(elapsed)}s\n"
                 break
 
             try:
@@ -357,7 +359,7 @@ class Pipe:
                         # Show heartbeat only after some time with no events
                         if consecutive_empty_polls > 2:
                             elapsed_int = int(time.time() - start_time)
-                            yield f"⏱️ {elapsed_int}s..."
+                            yield f" {elapsed_int}s"
                             poll_interval = min(
                                 poll_interval * 1.2,
                                 self.valves.MAX_POLL_INTERVAL
@@ -395,38 +397,41 @@ class Pipe:
                                 logger.error(f"Workflow failed: {event_type} - {error_msg}")
                                 return
 
-                            # Collect thinking/procedure content for collapsible section
+                            # Stream thinking/procedure content immediately in collapsible section
                             if content and event_type in ["task_started", "task_running", "agent_thinking"]:
-                                thinking_content.append(f"**{event_type}**: {content}")
-                            # Collect output content
-                            elif content and event_type in ["task_completed", "task_output", "crew_kickoff_completed"]:
-                                output_content.append(content)
+                                if not thinking_section_opened:
+                                    yield "\n\n<details>\n"
+                                    yield "<summary>🔍 <b>Workflow Procedure & Thinking</b> (click to expand)</summary>\n\n"
+                                    thinking_section_opened = True
+                                yield f"**{event_type}**: {content}\n\n"
 
-                            # Stream updates immediately
-                            if content:
-                                # Show brief status update
+                            # Stream output content immediately
+                            elif content and event_type in ["task_completed", "task_output"]:
+                                if not results_section_opened:
+                                    # Close thinking section if open
+                                    if thinking_section_opened:
+                                        yield "</details>\n\n"
+                                    yield "## 📊 Analysis Results\n\n"
+                                    results_section_opened = True
+                                yield f"{content}\n\n"
+
+                            # Show progress indicator for events without content
+                            elif not content:
                                 yield "."
 
                             # Check for completion
                             if event_type == "crew_kickoff_completed":
-                                # Close any pending output
-                                yield "\n\n"
-
-                                # Show thinking/procedure in collapsible block
-                                if thinking_content:
-                                    yield "<details>\n"
-                                    yield "<summary>🔍 <b>Workflow Procedure & Thinking</b> (click to expand)</summary>\n\n"
-                                    for item in thinking_content:
-                                        yield f"{item}\n\n"
+                                # Close any open sections
+                                if thinking_section_opened and not results_section_opened:
                                     yield "</details>\n\n"
 
-                                # Show final output
-                                if output_content:
-                                    yield "## 📊 Analysis Results\n\n"
-                                    for output in output_content:
-                                        yield f"{output}\n\n"
+                                # If there's completion content, show it
+                                if content:
+                                    if not results_section_opened:
+                                        yield "## 📊 Analysis Results\n\n"
+                                    yield f"{content}\n\n"
 
-                                yield "✅ **Workflow completed successfully**\n"
+                                yield "\n✅ **Workflow completed successfully**\n"
                                 return
 
                 elif response.status_code >= 500:
