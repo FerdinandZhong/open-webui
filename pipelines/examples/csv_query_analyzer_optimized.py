@@ -331,6 +331,8 @@ class Pipe:
         seen_timestamps = set()
         poll_interval = self.valves.POLL_INTERVAL
         consecutive_empty_polls = 0
+        thinking_content = []
+        output_content = []
 
         while True:
             # Check overall timeout
@@ -355,7 +357,7 @@ class Pipe:
                         # Show heartbeat only after some time with no events
                         if consecutive_empty_polls > 2:
                             elapsed_int = int(time.time() - start_time)
-                            yield f"[.] {elapsed_int}s...\n"
+                            yield f"⏱️ {elapsed_int}s..."
                             poll_interval = min(
                                 poll_interval * 1.2,
                                 self.valves.MAX_POLL_INTERVAL
@@ -381,29 +383,50 @@ class Pipe:
                             # Check for failure events FIRST (before checking for content)
                             if event_type in ["crew_kickoff_failed", "workflow_failed", "error"]:
                                 error_msg = event.get("error", "Unknown error")
-                                yield f"[!] ERROR ({event_type}): {error_msg}\n"
+                                yield f"\n\n❌ **Workflow Failed**: {error_msg}\n"
 
                                 # Include metadata/details if available
                                 if "metadata" in event:
                                     metadata = event.get("metadata")
                                     if isinstance(metadata, dict):
                                         if "error" in metadata:
-                                            yield f"    {metadata['error']}\n"
+                                            yield f"```\n{metadata['error']}\n```\n"
 
                                 logger.error(f"Workflow failed: {event_type} - {error_msg}")
                                 return
 
-                            # Stream all events with content
+                            # Collect thinking/procedure content for collapsible section
+                            if content and event_type in ["task_started", "task_running", "agent_thinking"]:
+                                thinking_content.append(f"**{event_type}**: {content}")
+                            # Collect output content
+                            elif content and event_type in ["task_completed", "task_output", "crew_kickoff_completed"]:
+                                output_content.append(content)
+
+                            # Stream updates immediately
                             if content:
-                                # For events with content, show it
-                                yield f"[event] {event_type}: {content}\n"
-                            else:
-                                # Show event type for non-content events
-                                yield f"[event] {event_type}\n"
+                                # Show brief status update
+                                yield "."
 
                             # Check for completion
                             if event_type == "crew_kickoff_completed":
-                                yield "[+] Workflow completed\n"
+                                # Close any pending output
+                                yield "\n\n"
+
+                                # Show thinking/procedure in collapsible block
+                                if thinking_content:
+                                    yield "<details>\n"
+                                    yield "<summary>🔍 <b>Workflow Procedure & Thinking</b> (click to expand)</summary>\n\n"
+                                    for item in thinking_content:
+                                        yield f"{item}\n\n"
+                                    yield "</details>\n\n"
+
+                                # Show final output
+                                if output_content:
+                                    yield "## 📊 Analysis Results\n\n"
+                                    for output in output_content:
+                                        yield f"{output}\n\n"
+
+                                yield "✅ **Workflow completed successfully**\n"
                                 return
 
                 elif response.status_code >= 500:
@@ -411,7 +434,7 @@ class Pipe:
                     logger.warning(f"Server error during polling: {response.status_code}")
                 else:
                     # Client error - stop polling
-                    yield f"[!] HTTP {response.status_code} error\n"
+                    yield f"\n\n❌ HTTP {response.status_code} error\n"
                     break
 
             except requests.exceptions.Timeout:
@@ -438,68 +461,81 @@ class Pipe:
                 # Validate configuration
                 is_valid, error_msg = self._validate_config()
                 if not is_valid:
-                    yield f"[-] Configuration Error: {error_msg}\n"
+                    yield f"❌ **Configuration Error**: {error_msg}\n"
                     return
 
                 # Extract user message
                 messages = body.get("messages", [])
                 if not messages:
-                    yield "[-] No messages found in request.\n"
+                    yield "❌ No messages found in request.\n"
                     return
 
                 user_message = messages[-1].get("content", "").strip()
                 if not user_message:
-                    yield "[-] Empty message. Please provide a query.\n"
+                    yield "❌ Empty message. Please provide a query.\n"
                     return
 
-                yield "CSV Query Analyzer\n"
+                yield "# 📊 CSV Query Analyzer\n\n"
+                yield "🔄 Initializing workflow...\n\n"
+
+                # Collect setup steps for collapsible section
+                setup_steps = []
 
                 # 3. Resolve and load file
-                yield "[*] Resolving file...\n"
                 try:
                     filename, file_bytes = self._resolve_file(body, __files__)
                     file_size_kb = len(file_bytes) / 1024
-                    yield f"[+] Found: {filename} ({file_size_kb:.1f} KB)\n"
+                    setup_steps.append(f"✅ Found file: **{filename}** ({file_size_kb:.1f} KB)")
+                    yield "."
                 except Exception as e:
-                    yield f"[-] File Error: {str(e)}\n"
+                    yield f"\n\n❌ **File Error**: {str(e)}\n"
                     return
 
                 # 4. Create session
-                yield "[*] Initializing CML Session...\n"
                 try:
                     session_id = self._create_session()
-                    yield f"[+] Session created: {session_id[:8]}...\n"
+                    setup_steps.append(f"✅ Created CML session: `{session_id[:8]}...`")
+                    yield "."
                 except Exception as e:
-                    yield f"[-] Session Error: {str(e)}\n"
+                    yield f"\n\n❌ **Session Error**: {str(e)}\n"
                     return
 
                 # 5. Upload file
-                yield f"[*] Uploading {filename}...\n"
                 try:
                     self._upload_file(session_id, filename, file_bytes)
-                    yield f"[+] Upload complete\n"
+                    setup_steps.append(f"✅ Uploaded file to session")
+                    yield "."
                 except Exception as e:
-                    yield f"[-] Upload Error: {str(e)}\n"
+                    yield f"\n\n❌ **Upload Error**: {str(e)}\n"
                     return
 
                 # 6. Start workflow
-                yield "[*] Starting Workflow Analysis...\n"
                 try:
                     trace_id = self._kickoff_workflow(session_id, filename, user_message)
-                    yield f"[+] Workflow initiated: {trace_id[:8]}...\n"
+                    setup_steps.append(f"✅ Started workflow: `{trace_id[:8]}...`")
+                    yield "."
                 except Exception as e:
-                    yield f"[-] Kickoff Error: {str(e)}\n"
+                    yield f"\n\n❌ **Kickoff Error**: {str(e)}\n"
                     return
 
+                yield "\n\n"
+
+                # Show setup in collapsible block
+                yield "<details>\n"
+                yield "<summary>⚙️ <b>Setup Steps</b> (click to expand)</summary>\n\n"
+                for step in setup_steps:
+                    yield f"{step}\n\n"
+                yield "</details>\n\n"
+
                 # 7. Stream events
-                yield "[*] Monitoring Workflow Events...\n"
+                yield "🔍 **Analyzing your data**...\n\n"
                 yield from self._poll_events(trace_id)
 
             except Exception as e:
                 logger.error(f"Pipeline error: {str(e)}", exc_info=True)
-                yield f"[-] Critical Error: {str(e)}\n"
+                yield f"\n\n❌ **Critical Error**: {str(e)}\n"
                 if self.valves.ENABLE_DEBUG_LOGGING:
                     import traceback
-                    yield f"{traceback.format_exc()}\n"
+                    yield f"\n```\n{traceback.format_exc()}\n```\n"
 
         return stream_workflow()
