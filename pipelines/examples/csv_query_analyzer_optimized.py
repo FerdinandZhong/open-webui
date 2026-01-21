@@ -341,7 +341,7 @@ class Pipe:
             elapsed = time.time() - start_time
             if elapsed > self.valves.OVERALL_TIMEOUT:
                 yield f"\n\n⏰ Timeout after {int(elapsed)}s\n"
-                break
+                return  # Return instead of break
 
             try:
                 response = requests.get(
@@ -432,7 +432,7 @@ class Pipe:
                 else:
                     # Client error - stop polling
                     yield f"\n\n❌ HTTP {response.status_code} error\n"
-                    break
+                    return  # Return instead of break to properly close generator
 
             except requests.exceptions.Timeout:
                 logger.warning("Polling request timed out, continuing...")
