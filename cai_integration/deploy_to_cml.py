@@ -465,10 +465,15 @@ class CMLDeployer:
             print("❌ Deployment failed: Could not get or create project.")
             sys.exit(1)
 
-        project_id, _ = project_result
+        project_id, has_git_url = project_result
 
-        # Note: Git sync will be triggered immediately after job creation
-        # No need to wait here - the git sync job will ensure files are available
+        # Wait for git clone to complete before creating jobs
+        # CML validates script paths exist when creating jobs
+        if has_git_url:
+            if not self.wait_for_git_clone(project_id):
+                print("❌ Deployment failed: Git clone did not complete in time.")
+                sys.exit(1)
+
         self.create_or_update_jobs(project_id)
 
         # Jobs with parent_job_id will be triggered automatically by CML
