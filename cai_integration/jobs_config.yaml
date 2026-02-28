@@ -12,7 +12,7 @@ jobs:
     script: ".git_sync.py"
     arguments: ""
     kernel: "python3"
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
+    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2026.01.1-b6"
     cpu: 4
     memory: 16
     gpu: 0
@@ -27,7 +27,7 @@ jobs:
     name: Create Python Environment
     script: cai_integration/setup_environment.py
     kernel: python3
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
+    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2026.01.1-b6"
     cpu: 4
     memory: 16
     timeout: 1800  # 30 minutes
@@ -42,7 +42,7 @@ jobs:
     name: "Build Frontend"
     script: "cai_integration/build_frontend.py"
     kernel: "python3"
-    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5"
+    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2026.01.1-b6"
     cpu: 4
     memory: 32
     timeout: 1800  # 30 minutes
