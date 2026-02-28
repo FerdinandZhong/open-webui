@@ -165,7 +165,7 @@ class CMLJobTester:
             "cpu": 1,
             "memory": 2,
             "gpu": 0,
-            "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2025.09.1-b5",
+            "runtime_identifier": "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2026.01.1-b6",
             "environment": {},
             "timeout": 300,
         }
