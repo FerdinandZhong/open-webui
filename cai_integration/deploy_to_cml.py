@@ -478,15 +478,17 @@ class CMLDeployer:
 
         # Jobs with parent_job_id will be triggered automatically by CML
         # when their parent job completes successfully.
-        # No manual triggering needed - just create the application.
+        # The job chain: git_sync -> create_env -> build_frontend -> deploy_application
+        # The deploy_application job creates the CML Application via API
 
         print("\n--- Jobs Created Successfully ---")
         print("✅ Git Repository Sync will run first")
         print("✅ Create Python Environment will run automatically after Git Sync completes")
         print("✅ Build Frontend will run automatically after Environment setup completes")
-
-        # Create application
-        self.create_application(project_id)
+        print("✅ Deploy Application will run automatically after Frontend build completes")
+        print("")
+        print("ℹ️  The application will be created by the 'Deploy Application' job")
+        print("   after all setup jobs complete successfully.")
 
         print("\n🎉 Deployment process finished. Check CML for status. 🎉")
 

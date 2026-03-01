@@ -261,12 +261,15 @@ def main():
     print("\n" + "=" * 60)
     print("✅ Git synchronization completed successfully!")
     print("=" * 60)
-    sys.exit(0)
+    # Note: Don't use sys.exit(0) here - CML's IPython shell interprets it as an exception
 
 
 if __name__ == "__main__":
     try:
         main()
+    except SystemExit:
+        # Re-raise SystemExit from failure cases (sys.exit(1))
+        raise
     except Exception as e:
         print(f"\n❌ Unexpected error: {str(e)}")
         import traceback
