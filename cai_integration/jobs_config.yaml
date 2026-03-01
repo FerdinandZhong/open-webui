@@ -50,4 +50,17 @@ jobs:
     arguments: ""
     environment: {}
 
-
+  # Deploy application job - runs after frontend build completes
+  # Creates/updates the CAI Application via API
+  # This ensures the application is only started after all setup is complete
+  deploy_application:
+    name: "Deploy Application"
+    script: "cai_integration/deploy_application.py"
+    kernel: "python3"
+    runtime_id: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2026.01.1-b6"
+    cpu: 2
+    memory: 4
+    timeout: 300  # 5 minutes
+    parent_job_key: "build_frontend"
+    arguments: ""
+    environment: {}
