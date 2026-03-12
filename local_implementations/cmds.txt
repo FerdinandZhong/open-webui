@@ -24,3 +24,12 @@ docker run -p 3000:8080 \
   -v open-webui:/app/backend/data \
   --name open-webui \
   ghcr.io/open-webui/open-webui:main
+
+
+docker run -p 3000:8080 \
+  --network ai-network \
+  -e OPENAI_API_BASE_URL=https://api.openai.com/v1/ \
+  -e OPENAI_API_KEY=$API_KEY \
+  -v open-webui:/app/backend/data \
+  --name open-webui \
+  ghcr.io/open-webui/open-webui:main

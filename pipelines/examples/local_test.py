@@ -5,8 +5,8 @@ import os
 import json
 
 # --- CONFIGURATION ---
-WORKFLOW_ID="6f56e8c5-e60a-4800-adef-2cb9e69ce7f6"
-MODEL_ENDPOINT = F"https://workflow-{WORKFLOW_ID}.ml-dbfc64d1-783.go01-dem.ylcu-atmi.cloudera.site"
+WORKFLOW_ID=os.environ["WORKFLOW_ID"]  # 0. Set your workflow ID in env variable
+MODEL_ENDPOINT = F"https://workflow-{WORKFLOW_ID}.ml-2a10846c-17f.se-sandb.a465-9q4k.cloudera.site"
 CDSW_APIV2_KEY = os.environ["CML_API_KEY"]  # 1. Replace with your actual key
 CSV_FILE_PATH = "temperature_data_small.csv"       # 2. Path to a local CSV file
 # ---------------------
