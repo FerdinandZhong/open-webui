@@ -119,7 +119,7 @@ pgvector==0.4.2
 
 PyMySQL==1.1.2
 boto3==1.42.62
-mariadb==1.1.14
+# mariadb==1.1.14  # requires MariaDB Connector/C system library (mariadb_config) — not available in CML
 
 pymilvus==2.6.9
 qdrant-client==1.17.0

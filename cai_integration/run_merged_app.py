@@ -30,7 +30,11 @@ def run_command(command, working_dir, check=True):
             if output == '' and process.poll() is not None:
                 break
             if output:
-                print(output.strip())
+                line = output.strip()
+                # Filter out noisy health check logs (GET / from localhost)
+                if '"GET / HTTP' in line and '127.0.0.1' in line:
+                    continue
+                print(line)
         rc = process.poll()
         if rc != 0 and check:
             print(f"Command failed with exit code {rc}")
